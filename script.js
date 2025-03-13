@@ -1,14 +1,8 @@
 import { renderSubredditButtons } from './views/main.js';
 import { loadSubreddit, handleSortChange } from './views/postsList.js';
-import { showPost, closeModal } from './views/singlePost.js';
+import { showPost } from './views/singlePost.js';
 import { showMenu, hideMenu } from './views/menu.js';
 
-// Make necessary functions available globally
-window.loadSubreddit = loadSubreddit;
-window.handleSortChange = handleSortChange;
-window.showPost = showPost;
-window.closeModal = closeModal;
-window.renderSubredditButtons = renderSubredditButtons;
 
 function initDarkMode() {
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -24,15 +18,26 @@ $(document).ready(() => {
     initDarkMode();
     renderSubredditButtons();
     $('.menu-button').on('click', showMenu);
+
+    // Cancel any ongoing speech synthesis on page load
+    setTimeout(() => {
+        window.speechSynthesis.cancel(); // Stop any ongoing speech
+    }, 100); // Delay of 100 milliseconds
+
+    // Check for speech state on page load
+    const speechState = JSON.parse(localStorage.getItem('speechState'));
+    if (speechState && speechState.state === 'playing') {
+        const utterance = new SpeechSynthesisUtterance(speechState.text);
+        window.speechSynthesis.speak(utterance);
+        $('.play-button').hide(); // Hide play button
+        $('.pause-button').show(); // Show pause button
+    } else if (speechState && speechState.state === 'paused') {
+        // If paused, show the play button
+        $('.play-button').show();
+        $('.pause-button').hide();
+    }
 });
 
-// Close modal when clicking outside
-window.onclick = function(event) {
-    const modal = document.getElementById('postModal');
-    if (event.target === modal) {
-        closeModal();
-    }
-}
 
 // Utility functions
 export function formatRelativeTime(timestamp) {

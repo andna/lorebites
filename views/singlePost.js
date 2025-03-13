@@ -3,61 +3,71 @@ import { loadSubreddit } from './postsList.js';
 
 export function showPost(post) {
     updateHeaders({
-        mainText: `${post.title}`,
-        subText: `By u/${post.author} in r/${post.subreddit}`,
+        mainText: post.title,
         showBack: true,
-        actionEnabled: true,
-        actionText: 'Share',
-        onBack: () => loadSubreddit(post.subreddit),
-        onAction: () => {
-            // Share functionality to be added
-            console.log('Share clicked');
+        onBack: () => {
+            // Stop any ongoing speech synthesis
+            if (window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel(); // Stop the current speech
+            }
+            loadSubreddit({ sub: post.subreddit }, 'top', 'day'); // Adjust sort and timeRange as needed
         }
     });
     
     const $content = $('#content');
     
-    // Decode HTML entities from selftext_html
-    const decodedHtml = $('<div>').html(post.selftext_html).text();
-    
     $content.empty()
         .append(
             $('<div>').addClass('post-view')
                 .append(
-                    $('<div>').addClass('post-meta')
-                        .append($('<span>').text(formatRelativeTime(post.created_utc)))
-                        .append($('<span>').text(`⤊ ${post.score}`))
-                        .append($('<span>').text(`☁ ${post.num_comments}`))
+                    $('<div>').addClass('action-header')
+                    .append($('<div>')
+                        .append($('<span>').text(`${formatRelativeTime(post.created_utc)} by `))
+                        .append($('<i>').text(`u/${post.author}`))
+                        .append($('<br>'))
+                        .append($('<span>').text(`in r/${post.subreddit}`))
+                    )
+                    .append($('<div>')
+                        
+                        .append($('<div>').text(`⤊ ${post.score}`))
+                        .append($('<div>').text(`☁ ${post.num_comments}`))
+                    )
                 )
                 .append(
-                    $('<div>').addClass('post-content').html(decodedHtml)
+                    $('<div>').addClass('post-content').html(addTargetBlank(decodeHtml(post.selftext_html.replace(/<!--.*?-->/g, '')))) // Decode HTML entities, remove comments, and add target="_blank"
                 )
+                .append($('<div>').addClass('post-controls')
+              
+                    .append($('<button>').addClass('play-button').text("Play").on('click', () => {
+                        const postText = post.selftext;
+                        console.log(postText);
+                        if (postText.trim()) { // Check if there is text to read
+                            if (window.speechSynthesis.paused) {
+                                window.speechSynthesis.resume(); // Resume if paused
+                            } else {
+                                const utterance = new SpeechSynthesisUtterance(postText);
+                                window.speechSynthesis.speak(utterance);
+                            
+                                // Handle the end of speech
+                                utterance.onend = () => {
+                                    $('.pause-button').hide(); // Hide pause button when done
+                                    $('.play-button').show(); // Show play button when done
+                                };
+                            }
+                            $('.play-button').hide(); // Hide the play button
+                            $('.pause-button').show(); // Show the pause button
+                        } else {
+                            console.warn('No text available to read.');
+                        }
+                    }))
+                    .append($('<button>').addClass('pause-button').text("Pause").hide().on('click', () => {
+                        window.speechSynthesis.pause(); // Pause the speech
+                        $('.pause-button').hide(); // Hide the pause button
+                        $('.play-button').show(); // Show the play button
+                    }))
+            )
         );
 }
-
-export function closeModal() {
-    // When closing the modal, we need to restore the previous header
-    // This assumes we're going back to the subreddit view
-    const subreddit = $('.subreddit-header h1').text().replace('r/', '');
-    updateHeaders(
-        `r/${subreddit}`,
-        'Browse top stories from this community'
-    );
-    
-    $('#postModal').fadeOut();
-}
-
-// Set up modal close handlers
-$(document).ready(() => {
-    $('.close-button').on('click', closeModal);
-
-    $(window).on('click', event => {
-        const $modal = $('#postModal');
-        if (event.target === $modal[0]) {
-            closeModal();
-        }
-    });
-});
 
 async function summarizeWithClaude(text) {
     try {
@@ -101,4 +111,14 @@ async function summarizeWithClaude(text) {
         console.error('Error getting summary:', error);
         return `Failed to generate summary: ${error.message}`;
     }
+}
+
+function decodeHtml(html) {
+    const txt = document.createElement('textarea');
+    txt.innerHTML = html;
+    return txt.value;
+}
+
+function addTargetBlank(html) {
+    return html.replace(/<a\s+(?![^>]*target=)([^>]*?)>/g, '<a target="_blank" $1>');
 }

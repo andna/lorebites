@@ -69,7 +69,6 @@ export function renderSubredditButtons() {
     updateHeaders({
         mainText: 'Reddit Story Reader',
         showBack: false,
-        actionEnabled: false
     });
 
     const $grid = $('<div>').addClass('subreddit-grid');
@@ -77,7 +76,7 @@ export function renderSubredditButtons() {
     subreddits.forEach(sub => {
         $('<div>').addClass('card')
             .append(
-                $('<div>').addClass('subreddit-header')
+                $('<div>').addClass('subreddit-title')
                     .append($('<h2>').html(`<small>r/</small>${sub.sub}`))
                     .append($('<div>').addClass('sub-subtitle').html(`<span>${sub.emoji}</span><small>${sub.subs}M</small>`))
             )

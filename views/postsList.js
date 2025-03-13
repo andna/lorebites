@@ -3,7 +3,7 @@ import { showPost } from './singlePost.js';
 import { formatRelativeTime, updateHeaders } from '../script.js';
 
 function getStorageKey(subreddit, sort, timeRange) {
-    return `reddit_posts_${subreddit}_${sort}_${timeRange}`;
+    return `reddit_posts_${subreddit}_${sort}_${timeRange}`.toLowerCase();
 }
 
 function getCachedPosts(subreddit, sort, timeRange) {
@@ -56,34 +56,32 @@ function renderPosts($postsList, posts) {
 export function loadSubreddit(subredditData, sort = 'top', timeRange = 'day') {
     const subreddit = subredditData.sub;
     updateHeaders({
-        mainText: `r/${subredditData.sub} ${subredditData.emoji}`,
+        mainText: `r/${subredditData.sub}`,
         showBack: true,
-        actionEnabled: false,
         onBack: renderSubredditButtons
     });
 
     const $content = $('#content');
     
     // Create header with controls
-    const $header = $('<div>').addClass('subreddit-header')
+    const $header = $('<div>').addClass('action-header')
         .append(
-            $('<div>').addClass('header-left')
-                .append(
-                    $('<div>').addClass('sort-controls')
-                        .append('Filter Top')
-                        .append(
-                            $('<select>').attr('id', 'timeRangeSelect')
-                                .append('<option value="hour">Last Hour</option>')
-                                .append('<option value="day">Today</option>')
-                                .append('<option value="week">This Week</option>')
-                                .append('<option value="month">This Month</option>')
-                                .append('<option value="year">This Year</option>')
-                                .append('<option value="all">All Time</option>')
-                                .val(timeRange)
-                                .on('change', () => handleSortChange(subredditData))
-                        )
-                )
-        );
+            $('<div>').addClass('sort-controls')
+            .append('Sorting Top')
+            .append(
+                $('<select>').attr('id', 'timeRangeSelect')
+                    .append('<option value="hour">Past Hour</option>')
+                    .append('<option value="day" selected>Past 24 Hours</option>')
+                    .append('<option value="week">Past Week</option>')
+                    .append('<option value="month">Past Month</option>')
+                    .append('<option value="year">Past Year</option>')
+                    .append('<option value="all">All Time</option>')
+                    .val(timeRange)
+                    .on('change', () => handleSortChange(subredditData))
+            )
+        )
+        .append($('<button>').text("Random"))
+        
 
     const $postsList = $('<div>').addClass('posts-list')
         .append($('<div>').addClass('loading').text('Loading posts...'));

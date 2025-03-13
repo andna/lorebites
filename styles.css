@@ -61,15 +61,12 @@ body {
     font-size: 0.8rem;
 }
 
-.subreddit-header {
-    margin-bottom: 1rem;
-}
-
-.subreddit-header h2 {
-    margin: 0;
-    font-size: 1.1rem;
-    color: #1a1a1a;
-    word-break: break-word;  /* Prevents overflow on small screens */
+.action-header {
+    padding: 1.3rem;
+    border-bottom: 1px solid #EEE;
+    margin-bottom: 1.3rem;
+    display: flex;
+    justify-content: space-between;
 }
 
 .sub-subtitle {
@@ -88,6 +85,12 @@ body {
     color: #444;
     font-size: 0.9rem;
     line-height: 1.4;
+}
+
+.post-controls {
+    position: sticky;
+    bottom: 0;
+    padding: 1rem;
 }
 
 .back-button {
@@ -161,10 +164,6 @@ body {
         padding: 12px;
     }
 
-    .subreddit-header h2 {
-        font-size: 1rem;
-    }
-
     .subreddit-desc {
         font-size: 0.8rem;
     }
@@ -194,10 +193,9 @@ header {
     padding: 1rem;
     background: var(--header-bg);
     color: white;
-    margin-bottom: 2rem;
 }
 
-#mainHeader, #subHeader {
+#mainHeader {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -209,11 +207,6 @@ header {
 #mainHeader {
     font-size: 1.5rem;
     font-weight: bold;
-}
-
-#subHeader {
-    font-size: 1rem;
-    opacity: 0.9;
 }
 
 .back-button, .action-button, .sub-action-button {
@@ -376,10 +369,6 @@ input:checked + .slider:before {
         background: #2a2a2a;
     }
 
-    .subreddit-header h2 {
-        color: #ffffff;
-    }
-
     .subscriber-count {
         color: #aaa;
     }
@@ -388,9 +377,6 @@ input:checked + .slider:before {
         color: #ddd;
     }
 
-    .subreddit-header {
-        background: #1a1a1a;
-    }
     
     .post-title {
         color: white;
@@ -399,4 +385,9 @@ input:checked + .slider:before {
     .post-meta {
         color: #aaa;
     }
+}
+
+.reading {
+    transform: scaleY(1.2);
+    transition: transform 0.2s ease-in-out;
 } 
