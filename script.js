@@ -1,6 +1,9 @@
 import { renderSubredditButtons } from './views/main.js';
 import { showMenu } from './views/menu.js';
+import { KokoroTTS } from "https://cdn.jsdelivr.net/npm/kokoro-js/+esm";
 
+// Initialize variable to store the TTS instance
+let kokoroTTS = null;
 
 function initDarkMode() {
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
@@ -16,6 +19,7 @@ $(document).ready(() => {
     initDarkMode();
     renderSubredditButtons();
     $('.menu-button').on('click', showMenu);
+    $('.demo').on('click', initKokoro);
 
     // Cancel any ongoing speech synthesis on page load
     setTimeout(() => {
@@ -34,8 +38,120 @@ $(document).ready(() => {
         $('.play-button').show();
         $('.pause-button').hide();
     }
+
+    // Initialize Kokoro
+    initKokoro();
 });
 
+async function initKokoro() {
+    try {
+        console.log("Initializing Kokoro");
+        const model_id = "onnx-community/Kokoro-82M-v1.0-ONNX";
+        kokoroTTS = await KokoroTTS.from_pretrained(model_id, {
+            dtype: "fp32",
+            device: "webgpu"
+        });
+        
+        console.log("Kokoro initialized successfully");
+        
+        // Add button with shorter text option
+        const $shortButton = $('<button>')
+            .text("Quick TTS")
+            .addClass("tts-short-button")
+            .css({
+                position: 'fixed',
+                bottom: '20px',
+                right: '150px',
+                padding: '10px 15px',
+                background: '#28a745',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: 'pointer'
+            })
+            .on('click', async () => {
+                const shortText = "For this example, let's pretend we're consuming text from an LLM, one word at a time.
+                generateAndPlayAudio(shortText);
+            });
+            
+        // Add original test button
+        const $button = $('<button>')
+            .text("Test TTS")
+            .addClass("tts-test-button")
+            .css({
+                position: 'fixed',
+                bottom: '20px',
+                right: '20px',
+                padding: '10px 15px',
+                background: '#4a6fa5',
+                color: 'white',
+                border: 'none',
+                borderRadius: '5px',
+                cursor: 'pointer'
+            })
+            .on('click', async () => {
+                const text = "This is a test of the Kokoro text to speech system.";
+                generateAndPlayAudio(text);
+            });
+            
+        // Add the buttons to the page
+        $('body').append($shortButton);
+        $('body').append($button);
+        
+    } catch (error) {
+        console.error("Error initializing Kokoro:", error);
+    }
+}
+
+// Function to generate and play audio
+async function generateAndPlayAudio(text) {
+    // Add loading indicator
+    const $loadingIndicator = $('<div>')
+        .text("Generating audio...")
+        .css({
+            position: 'fixed',
+            bottom: '70px',
+            right: '20px',
+            padding: '5px 10px',
+            background: 'rgba(0,0,0,0.7)',
+            color: 'white',
+            borderRadius: '3px'
+        });
+    $('body').append($loadingIndicator);
+    
+    console.log("Generating speech for: " + text);
+    
+    try {
+        // Small delay to update UI
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
+        // Generate the audio
+        const result = await kokoroTTS.generate(text);
+        console.log("Generated result with length:", result.audio.length);
+        
+        // Use the correct sampling rate
+        const samplingRate = result.sampling_rate || 24000;
+        
+        // Play the audio
+        if (result.audio && result.audio.length) {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const audioBuffer = audioContext.createBuffer(1, result.audio.length, samplingRate);
+            audioBuffer.getChannelData(0).set(result.audio);
+            
+            const source = audioContext.createBufferSource();
+            source.buffer = audioBuffer;
+            source.connect(audioContext.destination);
+            source.start();
+            console.log("Audio playback started");
+        }
+    } catch (error) {
+        console.error("Error generating or playing audio:", error);
+        $loadingIndicator.text("Error generating audio").css("background", "rgba(255,0,0,0.7)");
+    } finally {
+        // Remove loading indicator after a short delay
+        setTimeout(() => $loadingIndicator.remove(), 1000);
+    }
+}
 
 // Utility functions
 export function formatRelativeTime(timestamp) {
@@ -117,4 +233,41 @@ export function getReadingTimeInSeconds(text) {
     if (!text) return 0;
     const words = text.trim().split(/\s+/).length;
     return Math.ceil(words / 3.9);
+}
+
+// Create the worker
+const ttsWorker = new Worker('tts-worker.js');
+
+// Setup message handling
+ttsWorker.onmessage = function(e) {
+  const { type, audio, samplingRate, error } = e.data;
+  
+  if (type === 'initialized') {
+    console.log('TTS model initialized in worker');
+  }
+  else if (type === 'result') {
+    // Play the audio
+    const audioContext = new AudioContext();
+    const audioBuffer = audioContext.createBuffer(1, audio.length, samplingRate);
+    audioBuffer.getChannelData(0).set(audio);
+    
+    const source = audioContext.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(audioContext.destination);
+    source.start();
+  }
+  else if (type === 'error') {
+    console.error('Worker error:', error);
+  }
+};
+
+// Initialize the model in the worker
+ttsWorker.postMessage({ 
+  type: 'init', 
+  modelId: 'onnx-community/Kokoro-82M-v1.0-ONNX' 
+});
+
+// Later, generate speech
+function generateSpeech(text) {
+  ttsWorker.postMessage({ type: 'generate', text });
 }
