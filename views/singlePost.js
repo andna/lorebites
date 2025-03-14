@@ -227,39 +227,52 @@ export function showPost(post) {
                         .append($('<div>').text(`☁ ${post.num_comments}`))
                         
                     )
+                    .append($('<div>')
+                        .append($('<a>')
+                            .attr({
+                                href: post.url,
+                                title: post.url, // Show full URL on hover
+                                target: '_blank'
+                            })
+                            .text('↗️')
+                        )
+                    )
                 )
                 .append(
                     $('<div>').addClass('post-content').html(processedHtml)
                 )
                 .append($('<div>').addClass('post-controls')
-                    .append($progressDisplay)
-                    .append($('<button>').addClass('play-button').text("Play").on('click', () => {
-                        const $sentences = $('.sentence');
-                        if ($sentences.length) {
-                            if (window.speechSynthesis.paused) {
-                                window.speechSynthesis.resume();
-                                // Restart the timer
-                                progressTimer = setInterval(() => {
-                                    elapsedSeconds++;
-                                    updateProgressDisplay();
-                                }, 1000);
-                            } else {
-                                // Starting fresh
-                                startSpeakingFrom(0);
+                    .append($('<div>').addClass('post-controls-top')
+
+                        .append($('<button>').addClass('play-button').text("▶️").on('click', () => {
+                            const $sentences = $('.sentence');
+                            if ($sentences.length) {
+                                if (window.speechSynthesis.paused) {
+                                    window.speechSynthesis.resume();
+                                    // Restart the timer
+                                    progressTimer = setInterval(() => {
+                                        elapsedSeconds++;
+                                        updateProgressDisplay();
+                                    }, 1000);
+                                } else {
+                                    // Starting fresh
+                                    startSpeakingFrom(0);
+                                }
                             }
-                        }
-                    }))
-                    .append($('<button>').addClass('pause-button').text("Pause").hide().on('click', () => {
-                        window.speechSynthesis.pause();
-                        $('.pause-button').hide();
-                        $('.play-button').show();
-                        
-                        // Pause the timer
-                        if (progressTimer) {
-                            clearInterval(progressTimer);
-                            progressTimer = null;
-                        }
-                    }))
+                        }))
+                        .append($('<button>').addClass('pause-button').text("⏸️").hide().on('click', () => {
+                            window.speechSynthesis.pause();
+                            $('.pause-button').hide();
+                            $('.play-button').show();
+                            
+                            // Pause the timer
+                            if (progressTimer) {
+                                clearInterval(progressTimer);
+                                progressTimer = null;
+                            }
+                        }))
+                        .append($progressDisplay)
+                    )
                     .append($('<input type="range">')
                         .addClass('content-slider')
                         .attr({

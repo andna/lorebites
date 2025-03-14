@@ -95,8 +95,18 @@ body {
 
 .post-controls {
     position: sticky;
-    bottom: 0;
+    bottom: 1rem;
     padding: 1rem;
+    background: white;
+    margin: 1rem;
+    box-shadow: 0 5px 8px black;
+    border-radius: 1rem;
+}
+
+.post-controls-top{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .back-button {

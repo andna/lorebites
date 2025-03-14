@@ -32,7 +32,10 @@ function cachePosts(subreddit, sort, timeRange, posts) {
     localStorage.setItem(key, JSON.stringify(data));
 }
 
+let allPosts = [];
+
 function renderPosts($postsList, posts) {
+    allPosts = posts;
     $postsList.empty();
     
     posts.forEach(post => {
@@ -82,7 +85,14 @@ export function loadSubreddit(subredditData, sort = 'top', timeRange = 'day') {
                     .on('change', () => handleSortChange(subredditData))
             )
         )
-        .append($('<button>').text("Random"))
+        .append($('<button>').text("Random").on('click', () => {
+            if (allPosts.length > 0) {
+                // Generate random index
+                const randomIndex = Math.floor(Math.random() * allPosts.length);
+                
+                showPost(allPosts[randomIndex]);
+            }
+        }))
         
 
     const $postsList = $('<div>').addClass('posts-list')

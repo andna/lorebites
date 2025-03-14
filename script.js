@@ -1,7 +1,5 @@
 import { renderSubredditButtons } from './views/main.js';
-import { loadSubreddit, handleSortChange } from './views/postsList.js';
-import { showPost } from './views/singlePost.js';
-import { showMenu, hideMenu } from './views/menu.js';
+import { showMenu } from './views/menu.js';
 
 
 function initDarkMode() {
