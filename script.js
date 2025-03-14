@@ -49,7 +49,9 @@ async function initKokoro() {
         const model_id = "onnx-community/Kokoro-82M-v1.0-ONNX";
         kokoroTTS = await KokoroTTS.from_pretrained(model_id, {
             dtype: "fp32",
-            device: "webgpu"
+            device: "webgpu",
+            vocoder_top_k: 128,
+            interpolate_text: true
         });
         
         console.log("Kokoro initialized successfully");
@@ -70,7 +72,7 @@ async function initKokoro() {
                 cursor: 'pointer'
             })
             .on('click', async () => {
-                const shortText = "For this example, let's pretend we're consuming text from an LLM, one word at a time.
+                const shortText = "For this example, let's pretend we're consuming text from an LLM, one word at a time."
                 generateAndPlayAudio(shortText);
             });
             
@@ -90,8 +92,20 @@ async function initKokoro() {
                 cursor: 'pointer'
             })
             .on('click', async () => {
-                const text = "This is a test of the Kokoro text to speech system.";
-                generateAndPlayAudio(text);
+                const text = `I sprinted through the cornfield, the stalks clawing at me like fingers. Behind me, I could hear them—smell the acrid burn of their torches.
+
+The mob.
+
+I clutched my child to my chest, the only thing she had left in the world. I, her mother, her protector.
+
+Grief had already tried to pull me below, and for a time, I drowned in madness beneath the ruins of my life. The fever had stolen my whole kin, leaving just me and my babe.
+
+They wanted to take her from me. From her own mother. They thought I wasn’t fit to care for her. I couldn’t let them. I pressed the small body, wrapped in a potato sack, close to my heart.
+
+Crows burst from the stalks, black ink splattered against the gray sky. My lungs burned, my legs screamed in protest.
+
+To my left, something tore through the corn, snapping stalks as it came. The dogs. Wicked beasts with teeth like rake tines, sniffing out my trail, eager to rip flesh from bone. They hadn’t reached me yet, but they would.`;
+                streamAndPlayAudio(text);
             });
             
         // Add the buttons to the page
@@ -150,6 +164,131 @@ async function generateAndPlayAudio(text) {
     } finally {
         // Remove loading indicator after a short delay
         setTimeout(() => $loadingIndicator.remove(), 1000);
+    }
+}
+
+// Modified streaming function
+async function streamAndPlayAudio(text) {
+    // Add loading indicator
+    const $loadingIndicator = $('<div>')
+        .text("Streaming audio...")
+        .css({
+            position: 'fixed',
+            bottom: '70px',
+            right: '20px',
+            padding: '5px 10px',
+            background: 'rgba(0,0,0,0.7)',
+            color: 'white',
+            borderRadius: '3px'
+        });
+    $('body').append($loadingIndicator);
+    
+    console.log("Streaming speech for: " + text);
+    
+    try {
+        // Create audio context
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        await audioContext.resume();
+        
+        // First, set up the stream
+        const TextSplitterStream = (await import("https://cdn.jsdelivr.net/npm/kokoro-js/+esm")).TextSplitterStream;
+        const splitter = new TextSplitterStream();
+        const stream = kokoroTTS.stream(splitter);
+        
+        // Store audio chunks for sequential playback
+        const audioChunks = [];
+        let isPlaying = false;
+        
+        // Function to play the next chunk in queue
+        const playNextChunk = async () => {
+            if (audioChunks.length === 0 || isPlaying) {
+                return;
+            }
+            
+            isPlaying = true;
+            const { audioData, samplingRate } = audioChunks.shift();
+            
+            try {
+                const audioBuffer = audioContext.createBuffer(1, audioData.length, samplingRate);
+                audioBuffer.getChannelData(0).set(audioData);
+                
+                const source = audioContext.createBufferSource();
+                source.buffer = audioBuffer;
+                source.connect(audioContext.destination);
+                
+                // When this chunk ends, play the next one
+                source.onended = () => {
+                    console.log("Chunk finished playing, moving to next chunk");
+                    isPlaying = false;
+                    playNextChunk();
+                };
+                
+                source.start();
+                console.log("Playing chunk, remaining in queue:", audioChunks.length);
+            } catch (playError) {
+                console.error("Error playing audio data:", playError);
+                isPlaying = false;
+                playNextChunk(); // Try the next chunk if there was an error
+            }
+        };
+        
+        // Process stream output and collect chunks
+        (async () => {
+            try {
+                let chunkCount = 0;
+                for await (const chunk of stream) {
+                    console.log(`Received chunk ${chunkCount++}:`, chunk);
+                    
+                    // Based on console output, we need to access nested audio property
+                    if (chunk.audio && chunk.audio.audio) {
+                        console.log("Found nested audio data with length:", chunk.audio.audio.length);
+                        
+                        // Get the audio data and sampling rate
+                        const audioData = chunk.audio.audio;
+                        const samplingRate = chunk.audio.sampling_rate || 24000;
+                        
+                        // Add to playback queue
+                        audioChunks.push({ audioData, samplingRate });
+                        console.log("Added chunk to queue, queue length:", audioChunks.length);
+                        
+                        // Start playing if not already playing
+                        playNextChunk();
+                    } else {
+                        console.warn("Could not find audio data in chunk:", chunk);
+                    }
+                }
+                
+                console.log("Stream processing completed");
+                $loadingIndicator.text("Streaming complete");
+                setTimeout(() => $loadingIndicator.remove(), 1000);
+                
+            } catch (streamError) {
+                console.error("Error in stream processing:", streamError);
+                $loadingIndicator.text("Streaming error").css("background", "rgba(255,0,0,0.7)");
+                setTimeout(() => $loadingIndicator.remove(), 3000);
+            }
+        })();
+        
+        // Split text into tokens (words)
+        const tokens = text.match(/\s*\S+/g);
+        console.log(`Pushing ${tokens.length} tokens to stream`);
+        
+        // Push tokens to the stream with slight delays
+        for (const token of tokens) {
+            console.log("Pushing token:", token);
+            splitter.push(token);
+            // Small delay to allow UI to remain responsive
+            await new Promise(resolve => setTimeout(resolve, 20));
+        }
+        
+        // Close the stream to signal no more text
+        console.log("Closing stream");
+        splitter.close();
+        
+    } catch (error) {
+        console.error("Error setting up streaming:", error);
+        $loadingIndicator.text("Streaming setup error").css("background", "rgba(255,0,0,0.7)");
+        setTimeout(() => $loadingIndicator.remove(), 3000);
     }
 }
 
