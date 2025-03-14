@@ -1,7 +1,102 @@
-import { formatRelativeTime, updateHeaders } from '../script.js';
+import { formatRelativeTime, updateHeaders, getReadingTime, getReadingTimeInSeconds, formatReadingProgress } from '../script.js';
 import { loadSubreddit } from './postsList.js';
 
 export function showPost(post) {
+    let progressTimer = null;
+    let elapsedSeconds = 0;
+    let currentIndex = 0;
+    const totalSeconds = getReadingTimeInSeconds(post.selftext);
+    
+    // Function to update progress display
+    function updateProgressDisplay() {
+        const formattedTime = formatTime(elapsedSeconds);
+        $('.reading-progress').text(`${formattedTime} / ${getReadingTime(post.selftext)}`);
+    }
+
+    // Function to format time
+    function formatTime(seconds) {
+        if (seconds < 60) {
+            return `0:${seconds.toString().padStart(2, '0')}`;
+        } else {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+        }
+    }
+
+    // Function to speak a sentence
+    function speakSentence() {
+        const $sentences = $('.sentence');
+        if (currentIndex < $sentences.length) {
+            const $currentSentence = $sentences.eq(currentIndex);
+            
+            // Remove previous highlighting
+            $('.reading').removeClass('reading');
+            // Add highlighting to current sentence
+            $currentSentence.addClass('reading');
+            
+            // Update slider position
+            $('.content-slider').val(currentIndex);
+            
+            const utterance = new SpeechSynthesisUtterance($currentSentence.text());
+            
+            // Start or continue the progress timer
+            if (progressTimer) {
+                clearInterval(progressTimer);
+            }
+            
+            progressTimer = setInterval(() => {
+                elapsedSeconds++;
+                updateProgressDisplay();
+                
+                // Safety check - don't let timer run forever
+                if (elapsedSeconds > totalSeconds + 30) {
+                    clearInterval(progressTimer);
+                }
+            }, 1000);
+            
+            utterance.onend = () => {
+                $currentSentence.removeClass('reading');
+                currentIndex++;
+                if (currentIndex < $sentences.length) {
+                    speakSentence();
+                } else {
+                    // Reading complete
+                    $('.pause-button').hide();
+                    $('.play-button').show();
+                    clearInterval(progressTimer);
+                    progressTimer = null;
+                }
+            };
+            
+            window.speechSynthesis.speak(utterance);
+        }
+    }
+
+    // Function to start reading from a specific index
+    function startSpeakingFrom(startIndex) {
+        currentIndex = startIndex;
+        
+        // Update elapsed seconds based on the new position
+        elapsedSeconds = Math.floor((currentIndex / $('.sentence').length) * totalSeconds);
+        updateProgressDisplay();
+        
+        // Clear any existing timer
+        if (progressTimer) {
+            clearInterval(progressTimer);
+        }
+        
+        speakSentence();
+        
+        $('.play-button').hide();
+        $('.pause-button').show();
+    }
+
+    // Create the reading progress element
+    const $progressDisplay = $('<div>')
+        .addClass('reading-progress')
+        .text(`0:00 / ${getReadingTime(post.selftext)}`);
+    
     updateHeaders({
         mainText: post.title,
         showBack: true,
@@ -10,6 +105,13 @@ export function showPost(post) {
             if (window.speechSynthesis.speaking) {
                 window.speechSynthesis.cancel(); // Stop the current speech
             }
+            
+            // Clear any running timers
+            if (progressTimer) {
+                clearInterval(progressTimer);
+                progressTimer = null;
+            }
+            
             loadSubreddit({ sub: post.subreddit }, 'top', 'day'); // Adjust sort and timeRange as needed
         }
     });
@@ -20,6 +122,9 @@ export function showPost(post) {
     const decodedHtml = decodeHtml(post.selftext_html.replace(/<!--.*?-->/g, ''));
     const $tempDiv = $('<div>').html(decodedHtml);
     
+
+    let totalSentences = 0;
+
     // Process each paragraph and wrap sentences while preserving HTML
     $tempDiv.find('p').each(function() {
         const $p = $(this);
@@ -65,6 +170,8 @@ export function showPost(post) {
         let processedHtml = '';
         let lastEnd = 0;
         const sentences = fullText.match(/[^.!?]+[.!?]+/g) || [fullText];
+        totalSentences += sentences.length;
+
         
         sentences.forEach((sentence, index) => {
             if (!sentence.trim()) return;
@@ -118,69 +225,67 @@ export function showPost(post) {
                         
                         .append($('<div>').text(`⤊ ${post.score}`))
                         .append($('<div>').text(`☁ ${post.num_comments}`))
+                        
                     )
                 )
                 .append(
                     $('<div>').addClass('post-content').html(processedHtml)
                 )
                 .append($('<div>').addClass('post-controls')
-              
+                    .append($progressDisplay)
                     .append($('<button>').addClass('play-button').text("Play").on('click', () => {
                         const $sentences = $('.sentence');
                         if ($sentences.length) {
-                            let currentIndex = 0;
-                            
-                            const speakSentence = () => {
-                                if (currentIndex < $sentences.length) {
-                                    const $currentSentence = $sentences.eq(currentIndex);
-                                    
-                                    // Remove previous highlighting
-                                    $('.reading').removeClass('reading');
-                                    // Add highlighting to current sentence
-                                    $currentSentence.addClass('reading');
-                                    
-                                    // Update slider position
-                                    $('.content-slider').val(currentIndex);
-
-                                    const utterance = new SpeechSynthesisUtterance($currentSentence.text());
-                                    
-                                    utterance.onend = () => {
-                                        $currentSentence.removeClass('reading');
-                                        currentIndex++;
-                                        if (currentIndex < $sentences.length) {
-                                            speakSentence();
-                                        } else {
-                                            $('.pause-button').hide();
-                                            $('.play-button').show();
-                                        }
-                                    };
-                                    
-                                    window.speechSynthesis.speak(utterance);
-                                }
-                            };
-
                             if (window.speechSynthesis.paused) {
                                 window.speechSynthesis.resume();
+                                // Restart the timer
+                                progressTimer = setInterval(() => {
+                                    elapsedSeconds++;
+                                    updateProgressDisplay();
+                                }, 1000);
                             } else {
-                                speakSentence();
+                                // Starting fresh
+                                startSpeakingFrom(0);
                             }
-                            
-                            $('.play-button').hide();
-                            $('.pause-button').show();
-                        } else {
-                            console.warn('No sentences found to read.');
                         }
                     }))
                     .append($('<button>').addClass('pause-button').text("Pause").hide().on('click', () => {
                         window.speechSynthesis.pause();
                         $('.pause-button').hide();
                         $('.play-button').show();
+                        
+                        // Pause the timer
+                        if (progressTimer) {
+                            clearInterval(progressTimer);
+                            progressTimer = null;
+                        }
                     }))
                     .append($('<input type="range">')
                         .addClass('content-slider')
+                        .attr({
+                            min: 0,
+                            max: totalSentences - 1,
+                            value: currentIndex
+                        })
+                        .on('input', function() {
+                            const newIndex = parseInt($(this).val());
+                            // Update progress time immediately when sliding
+                            elapsedSeconds = Math.floor((newIndex / $('.sentence').length) * totalSeconds);
+                            updateProgressDisplay();
+                        })
+                        .on('change', function() {
+                            const newIndex = parseInt($(this).val());
+                            if (window.speechSynthesis.speaking) {
+                                window.speechSynthesis.cancel();
+                            }
+                            if (progressTimer) {
+                                clearInterval(progressTimer);
+                            }
+                            startSpeakingFrom(newIndex);
+                        })
                     )
-            )
-        );
+                )
+            );
 
     // Set up the slider after content is added to DOM
     const $sentences = $('.sentence');
@@ -211,104 +316,18 @@ export function showPost(post) {
     // Get sentence information
     const { totalCount, indexMap } = getSentenceInfo();
     
-    // Function to start speaking from a specific index
-    const startSpeakingFrom = (globalIndex) => {
-        let currentIndex = globalIndex;
-        
-        const speakSentence = () => {
-            if (currentIndex < totalCount) {
-                const sentenceInfo = indexMap.get(currentIndex);
-                const $currentSentence = sentenceInfo.element;
-                
-                // Remove previous highlighting
-                $('.reading').removeClass('reading');
-                // Add highlighting to current sentence
-                $currentSentence.addClass('reading');
-                
-                // Update slider position
-                $('.content-slider').val(currentIndex);
-                
-                // Scroll sentence into view
-                $currentSentence[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-                const utterance = new SpeechSynthesisUtterance($currentSentence.text());
-                
-                utterance.onend = () => {
-                    $currentSentence.removeClass('reading');
-                    currentIndex++;
-                    if (currentIndex < totalCount) {
-                        speakSentence();
-                    } else {
-                        $('.pause-button').hide();
-                        $('.play-button').show();
-                    }
-                };
-                
-                window.speechSynthesis.speak(utterance);
+    // When setting up the sentences, add click handlers
+    $sentences.each((idx, sentence) => {
+        $(sentence).on('click', () => {
+            if (window.speechSynthesis.speaking) {
+                window.speechSynthesis.cancel();
             }
-        };
-
-        // Stop any ongoing speech
-        window.speechSynthesis.cancel();
-        
-        // Start speaking
-        speakSentence();
-        $('.play-button').hide();
-        $('.pause-button').show();
-    };
-    
-    // Only set up controls if we have sentences
-    if (totalCount > 0) {
-        // Set up slider
-        $slider.attr({
-            min: 0,
-            max: totalCount - 1,
-            value: 0,
-            step: 1
+            if (progressTimer) {
+                clearInterval(progressTimer);
+            }
+            startSpeakingFrom(idx);
         });
-        
-        // Add click handler to sentences
-        $sentences.on('click', function() {
-            const $clicked = $(this);
-            let globalIndex = 0;
-            
-            // Find the global index of the clicked sentence
-            $('.sentence').each(function(idx) {
-                if (this === $clicked[0]) {
-                    globalIndex = idx;
-                    return false; // break the loop
-                }
-            });
-            
-            startSpeakingFrom(globalIndex);
-        });
-        
-        $slider.on('input', function() {
-            // Stop any ongoing speech
-            window.speechSynthesis.cancel();
-            $('.pause-button').hide();
-            $('.play-button').show();
-            
-            // Remove previous highlighting
-            $('.reading').removeClass('reading');
-            
-            // Highlight current sentence
-            const currentIndex = parseInt($(this).val());
-            const sentenceInfo = indexMap.get(currentIndex);
-            sentenceInfo.element.addClass('reading');
-            
-            // Scroll sentence into view
-            sentenceInfo.element[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-        });
-        
-        $slider.on('change', function() {
-            const startIndex = parseInt($(this).val());
-            startSpeakingFrom(startIndex);
-        });
-    } else {
-        // If no sentences, disable the slider
-        $slider.attr('disabled', true);
-    }
+    });
 }
 
 async function summarizeWithClaude(text) {

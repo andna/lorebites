@@ -1,6 +1,6 @@
 import { renderSubredditButtons } from './main.js';
 import { showPost } from './singlePost.js';
-import { formatRelativeTime, updateHeaders } from '../script.js';
+import { formatRelativeTime, updateHeaders, getReadingTime } from '../script.js';
 
 function getStorageKey(subreddit, sort, timeRange) {
     return `reddit_posts_${subreddit}_${sort}_${timeRange}`.toLowerCase();
@@ -47,6 +47,8 @@ function renderPosts($postsList, posts) {
                     .append($('<div>').text(formatRelativeTime(post.created_utc)))
                     .append($('<div>').text(`⤊ ${post.score}`))
                     .append($('<div>').text(`☁ ${post.num_comments}`))
+                    .append($('<div>').text(`🎧 ${getReadingTime(post.selftext)}`))
+                    
             )
             .on('click', () => showPost(post))
             .appendTo($postsList);

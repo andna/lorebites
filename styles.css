@@ -440,4 +440,17 @@ input:checked + .slider:before {
 
 .sentence:hover {
     color: rgba(0, 145, 255, 0.776);
+}
+
+.reading-progress {
+    font-size: 0.9rem;
+    color: #666;
+    margin-right: 1rem;
+    min-width: 100px;
+    text-align: left;
+}
+
+/* Dark mode support */
+:root.dark .reading-progress {
+    color: #aaa;
 } 

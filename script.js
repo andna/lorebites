@@ -77,3 +77,46 @@ export function updateHeaders({
         $backButton.off('click').on('click', onBack);
     }
 }
+
+export function getWordCount(text) {
+    if (!text) return 0;
+    return text.trim().split(/\s+/).length;
+}
+
+export function formatReadingProgress(currentIndex, totalSentences, totalTime) {
+    if (currentIndex === 0) return '0:00';
+    
+    const progress = (currentIndex / totalSentences);
+    const secondsElapsed = Math.floor(totalTime * progress);
+    
+    if (secondsElapsed < 60) {
+        return `0:${secondsElapsed.toString().padStart(2, '0')}`;
+    } else {
+        const minutes = Math.floor(secondsElapsed / 60);
+        const seconds = secondsElapsed % 60;
+        return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+}
+
+export function getReadingTime(text) {
+    if (!text) return 0;
+    const words = text.trim().split(/\s+/).length;
+    // Adjusted to ~3.8 words per second * 60 = 234 words per minute
+    const secondsToRead = Math.ceil(words / 3.8);
+    
+    // Format the time nicely
+    if (secondsToRead < 60) {
+        return `${secondsToRead} sec`;
+    } else {
+        const minutes = Math.floor(secondsToRead / 60);
+        const seconds = secondsToRead % 60;
+        return seconds > 0 ? `${minutes}:${seconds.toString().padStart(2, '0')}m` : `${minutes}m`;
+    }
+}
+
+// Add this helper to get seconds from reading time
+export function getReadingTimeInSeconds(text) {
+    if (!text) return 0;
+    const words = text.trim().split(/\s+/).length;
+    return Math.ceil(words / 3.9);
+}
