@@ -79,8 +79,10 @@ export function KokoroProvider({ children }) {
     }
   }
   
-  async function streamAndPlayAudio(text, voice = "am_onyx") {
-    if (!kokoroTTS) return;
+  async function streamAndPlayAudio(text, options = {}) {
+    if (!kokoroTTS) return false;
+    
+    const { onComplete } = options || {};
     
     console.log("Streaming speech for: " + text);
 
@@ -90,17 +92,23 @@ export function KokoroProvider({ children }) {
       
       const { TextSplitterStream } = await import("https://cdn.jsdelivr.net/npm/kokoro-js/+esm");
       const splitter = new TextSplitterStream();
-      const stream = kokoroTTS.stream(splitter, {voice});
       
-      // Use the same sequential playback logic you've already implemented
+      // Use the correct voice format
+      const stream = kokoroTTS.stream(splitter, {
+        voice: "am_onyx"
+      });
+      
+      // Keep all chunks and track current playing index
       const audioChunks = [];
+      let currentPlayIndex = 0;
       let isPlaying = false;
+      let playbackFinished = false;
       
-      const playNextChunk = async () => {
-        if (audioChunks.length === 0 || isPlaying) return;
+      const playChunkAtIndex = async (index) => {
+        if (index >= audioChunks.length || isPlaying) return;
         
         isPlaying = true;
-        const { audioData, samplingRate } = audioChunks.shift();
+        const { audioData, samplingRate } = audioChunks[index];
         
         try {
           const audioBuffer = audioContext.createBuffer(1, audioData.length, samplingRate);
@@ -111,56 +119,88 @@ export function KokoroProvider({ children }) {
           source.connect(audioContext.destination);
           
           source.onended = () => {
-            console.log("Chunk finished playing, moving to next chunk");
+            console.log(`Chunk ${index} finished playing, moving to next chunk`);
             isPlaying = false;
-            playNextChunk();
+            
+            // Move to next chunk
+            currentPlayIndex++;
+            
+            // Check if we've reached the end
+            if (currentPlayIndex >= audioChunks.length) {
+              if (playbackFinished && onComplete) {
+                console.log("All chunks played, calling onComplete");
+                onComplete();
+              }
+              return;
+            }
+            
+            // Play the next chunk
+            playChunkAtIndex(currentPlayIndex);
           };
           
           source.start();
-          console.log("Playing chunk, remaining in queue:", audioChunks.length);
+          console.log(`Playing chunk ${index}, total chunks: ${audioChunks.length}`);
 
         } catch (playError) {
-          console.error("Error playing audio data:", playError);
+          console.error(`Error playing audio chunk ${index}:`, playError);
           isPlaying = false;
-          playNextChunk();
+          
+          // Try to recover by moving to next chunk
+          currentPlayIndex++;
+          if (currentPlayIndex < audioChunks.length) {
+            playChunkAtIndex(currentPlayIndex);
+          } else if (playbackFinished && onComplete) {
+            onComplete();
+          }
         }
       };
       
       // Process stream
       (async () => {
         try {
-            let chunkCount = 0;
+          let chunkCount = 0;
           for await (const chunk of stream) {
             console.log(`Received chunk ${chunkCount++}:`, chunk);
 
-            if (chunk.audio && chunk.audio.audio) {
-                console.log("Found nested audio data with length:", chunk.audio.audio.length);
+            if (chunk.audio && chunk.audio.audio && chunk.audio.audio.length > 0) {
+              console.log("Found audio data with length:", chunk.audio.audio.length);
 
               const audioData = chunk.audio.audio;
               const samplingRate = chunk.audio.sampling_rate || 24000;
               
+              // Add to our collection
               audioChunks.push({ audioData, samplingRate });
-              console.log("Added chunk to queue, queue length:", audioChunks.length);
+              console.log("Added chunk to collection, total chunks:", audioChunks.length);
 
-              playNextChunk();
+              // If this is the first chunk or we're not currently playing, start playback
+              if (audioChunks.length === 1 || !isPlaying) {
+                playChunkAtIndex(currentPlayIndex);
+              }
             } else {
-                console.warn("Could not find audio data in chunk:", chunk);
+              console.warn("Empty audio chunk received:", chunk);
             }
           }
+          
           console.log("Stream processing completed");
-
+          playbackFinished = true;
+          
+          // If we've already played all chunks, call onComplete
+          if (currentPlayIndex >= audioChunks.length && onComplete) {
+            console.log("All chunks already played, calling onComplete");
+            onComplete();
+          }
         } catch (streamError) {
           console.error("Error in stream processing:", streamError);
+          if (onComplete) onComplete();
         }
       })();
       
       // Push tokens to stream
-      const tokens = text.match(/\s*\S+/g);
+      const tokens = text.match(/\s*\S+/g) || [text];
       console.log(`Pushing ${tokens.length} tokens to stream`);
 
       for (const token of tokens) {
         console.log("Pushing token:", token);
-
         splitter.push(token);
         await new Promise(resolve => setTimeout(resolve, 20));
       }
@@ -169,6 +209,7 @@ export function KokoroProvider({ children }) {
       return true;
     } catch (error) {
       console.error("Error setting up streaming:", error);
+      if (onComplete) onComplete();
       return false;
     }
   }
