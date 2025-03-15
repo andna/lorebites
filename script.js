@@ -40,16 +40,29 @@ $(document).ready(() => {
     }
 
     // Initialize Kokoro
-    initKokoro();
+    //initKokoro();
+});
+console.log("Browser capabilities:", {
+    hasWebGPU: 'gpu' in navigator,
+    userAgent: navigator.userAgent,
+    platform: navigator.platform
 });
 
 async function initKokoro() {
     try {
-        console.log("Initializing Kokoro");
+        console.log("Starting Kokoro initialization...");
         const model_id = "onnx-community/Kokoro-82M-v1.0-ONNX";
+        
+        // Log the device capabilities
+        console.log("Browser capabilities:", {
+            hasWebGPU: 'gpu' in navigator,
+            userAgent: navigator.userAgent,
+            platform: navigator.platform
+        });
+        
         kokoroTTS = await KokoroTTS.from_pretrained(model_id, {
             dtype: "fp32",
-            device: "webgpu",
+            device: "webgpu",  // This might be the issue on mobile
             vocoder_top_k: 128,
             interpolate_text: true
         });
@@ -100,11 +113,11 @@ I clutched my child to my chest, the only thing she had left in the world. I, he
 
 Grief had already tried to pull me below, and for a time, I drowned in madness beneath the ruins of my life. The fever had stolen my whole kin, leaving just me and my babe.
 
-They wanted to take her from me. From her own mother. They thought I wasn’t fit to care for her. I couldn’t let them. I pressed the small body, wrapped in a potato sack, close to my heart.
+They wanted to take her from me. From her own mother. They thought I wasn't fit to care for her. I couldn't let them. I pressed the small body, wrapped in a potato sack, close to my heart.
 
 Crows burst from the stalks, black ink splattered against the gray sky. My lungs burned, my legs screamed in protest.
 
-To my left, something tore through the corn, snapping stalks as it came. The dogs. Wicked beasts with teeth like rake tines, sniffing out my trail, eager to rip flesh from bone. They hadn’t reached me yet, but they would.`;
+To my left, something tore through the corn, snapping stalks as it came. The dogs. Wicked beasts with teeth like rake tines, sniffing out my trail, eager to rip flesh from bone. They hadn't reached me yet, but they would.`;
                 streamAndPlayAudio(text);
             });
             
@@ -113,12 +126,26 @@ To my left, something tore through the corn, snapping stalks as it came. The dog
         $('body').append($button);
         
     } catch (error) {
-        console.error("Error initializing Kokoro:", error);
+        // Detailed error logging
+        console.error("Kokoro initialization failed:", {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+        });
+        
+        alert(`Error initializing Kokoro: ${error.message}`);
+        
+        // Provide user-friendly message based on common errors
+        if (error.message?.includes('WebGPU')) {
+            alert("Your browser doesn't support WebGPU. Kokoro requires a browser with WebGPU support.");
+        } else if (error.message?.includes('memory')) {
+            alert("Not enough memory available. Try closing other tabs or restarting your browser.");
+        }
     }
 }
 
 // Function to generate and play audio
-async function generateAndPlayAudio(text) {
+export async function generateAndPlayAudio(text) {
     // Add loading indicator
     const $loadingIndicator = $('<div>')
         .text("Generating audio...")
@@ -140,7 +167,7 @@ async function generateAndPlayAudio(text) {
         await new Promise(resolve => setTimeout(resolve, 50));
         
         // Generate the audio
-        const result = await kokoroTTS.generate(text);
+        const result = await kokoroTTS.generate(text, {voice: "af_heart"});
         console.log("Generated result with length:", result.audio.length);
         
         // Use the correct sampling rate
@@ -168,7 +195,7 @@ async function generateAndPlayAudio(text) {
 }
 
 // Modified streaming function
-async function streamAndPlayAudio(text) {
+export async function streamAndPlayAudio(text) {
     // Add loading indicator
     const $loadingIndicator = $('<div>')
         .text("Streaming audio...")
@@ -193,7 +220,7 @@ async function streamAndPlayAudio(text) {
         // First, set up the stream
         const TextSplitterStream = (await import("https://cdn.jsdelivr.net/npm/kokoro-js/+esm")).TextSplitterStream;
         const splitter = new TextSplitterStream();
-        const stream = kokoroTTS.stream(splitter);
+        const stream = kokoroTTS.stream(splitter, {voice: "am_onyx"});
         
         // Store audio chunks for sequential playback
         const audioChunks = [];
