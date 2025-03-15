@@ -1,0 +1,54 @@
+.subreddit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  padding: 16px;
+}
+
+.card {
+  background-color: var(--card-bg, #fff);
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+}
+
+.subreddit-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.subreddit-title h2 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.subreddit-title small {
+  opacity: 0.7;
+  font-weight: normal;
+}
+
+.sub-subtitle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.subreddit-desc {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-secondary, #555);
+}
+
+/* Dark mode support */
+:root.dark .card {
+  --card-bg: #222;
+  --text-secondary: #aaa;
+} 

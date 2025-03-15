@@ -40,7 +40,7 @@ $(document).ready(() => {
     }
 
     // Initialize Kokoro
-    //initKokoro();
+    initKokoro();
 });
 console.log("Browser capabilities:", {
     hasWebGPU: 'gpu' in navigator,
@@ -61,7 +61,7 @@ async function initKokoro() {
         });
         
         kokoroTTS = await KokoroTTS.from_pretrained(model_id, {
-            dtype: "fp32",
+            dtype: "fp32", // Options: "fp32", "fp16", "q8", "q4", "q4f16"
             device: "webgpu",  // This might be the issue on mobile
             vocoder_top_k: 128,
             interpolate_text: true

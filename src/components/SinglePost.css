@@ -1,0 +1,131 @@
+.post-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding-bottom: 80px; /* Space for controls */
+}
+
+.action-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background-color: var(--header-bg, #f5f5f5);
+  border-bottom: 1px solid var(--border-color, #ddd);
+}
+
+.post-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  line-height: 1.6;
+  font-size: 1.1rem;
+}
+
+.post-content p {
+  margin-bottom: 1.2em;
+}
+
+.post-content a {
+  color: var(--link-color, #4a6fa5);
+  text-decoration: none;
+}
+
+.post-content a:hover {
+  text-decoration: underline;
+}
+
+.sentence {
+  cursor: pointer;
+  padding: 2px 0;
+  border-radius: 2px;
+  transition: background-color 0.2s ease;
+}
+
+.sentence:hover {
+  background-color: var(--sentence-hover, rgba(74, 111, 165, 0.1));
+}
+
+.sentence.reading {
+  background-color: var(--sentence-active, rgba(74, 111, 165, 0.2));
+}
+
+.post-controls {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: var(--controls-bg, #fff);
+  border-top: 1px solid var(--border-color, #ddd);
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.post-controls-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.play-button, .pause-button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0;
+}
+
+.reading-progress {
+  font-size: 0.9rem;
+  color: var(--text-secondary, #666);
+}
+
+.content-slider {
+  width: 100%;
+  height: 20px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--slider-bg, #ddd);
+  outline: none;
+  border-radius: 10px;
+}
+
+.content-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--slider-thumb, #4a6fa5);
+  cursor: pointer;
+}
+
+.content-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--slider-thumb, #4a6fa5);
+  cursor: pointer;
+}
+
+/* Dark mode support */
+:root.dark .action-header {
+  --header-bg: #1a1a1a;
+  --border-color: #333;
+}
+
+:root.dark .post-content {
+  --link-color: #6a8fc5;
+  --sentence-hover: rgba(106, 143, 197, 0.15);
+  --sentence-active: rgba(106, 143, 197, 0.25);
+}
+
+:root.dark .post-controls {
+  --controls-bg: #222;
+  --border-color: #333;
+  --text-secondary: #aaa;
+  --slider-bg: #444;
+  --slider-thumb: #6a8fc5;
+} 
