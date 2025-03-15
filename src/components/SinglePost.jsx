@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { formatRelativeTime, getReadingTime, getReadingTimeInSeconds } from '../utils/formatters';
+import { AudioControls } from './AudioControls';
 import './SinglePost.css';
 
 export function SinglePost({ post, onBack }) {
@@ -372,27 +373,18 @@ export function SinglePost({ post, onBack }) {
         dangerouslySetInnerHTML={{ __html: processedContent }}
       />
       
-      <div className="post-controls">
-        <div className="post-controls-top">
-          {!isPlaying ? (
-            <button className="play-button" onClick={handlePlay}>▶️</button>
-          ) : (
-            <button className="pause-button" onClick={handlePause}>⏸️</button>
-          )}
-          <div className="reading-progress">
-            {formatTime(elapsedSeconds)} / {getReadingTime(post.selftext)}
-          </div>
-        </div>
-        <input
-          type="range"
-          className="content-slider"
-          min={0}
-          max={totalSentences > 0 ? totalSentences - 1 : 0}
-          value={currentIndex}
-          onChange={handleSliderChange}
-          onInput={handleSliderInput}
-        />
-      </div>
+      <AudioControls
+        isPlaying={isPlaying}
+        onPlay={handlePlay}
+        onPause={handlePause}
+        currentTime={formatTime(elapsedSeconds)}
+        totalTime={getReadingTime(post.selftext)}
+        currentIndex={currentIndex}
+        totalChunks={totalSentences}
+        onSliderChange={handleSliderChange}
+        onSliderInput={handleSliderInput}
+        className="post-controls"
+      />
     </div>
   );
 }

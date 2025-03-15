@@ -1,0 +1,88 @@
+.audio-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.audio-controls-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.play-button,
+.pause-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.5rem;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+}
+
+.play-button:hover,
+.pause-button:hover {
+  transform: scale(1.1);
+}
+
+.reading-progress {
+  font-size: 0.9rem;
+  color: var(--text-secondary, #666);
+}
+
+.content-slider {
+  width: 100%;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--slider-bg, #ddd);
+  outline: none;
+  border-radius: 2px;
+  transition: height 0.2s ease;
+}
+
+.content-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  background: var(--primary-color, #4a90e2);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.content-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: var(--primary-color, #4a90e2);
+  border-radius: 50%;
+  cursor: pointer;
+  border: none;
+  transition: transform 0.2s ease;
+}
+
+.content-slider:hover {
+  height: 6px;
+}
+
+.content-slider:hover::-webkit-slider-thumb {
+  transform: scale(1.2);
+}
+
+.content-slider:hover::-moz-range-thumb {
+  transform: scale(1.2);
+}
+
+/* Dark mode support */
+:root.dark .reading-progress {
+  color: var(--text-secondary-dark, #aaa);
+}
+
+:root.dark .content-slider {
+  background: var(--slider-bg-dark, #444);
+} 
