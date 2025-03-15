@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect, useContext, useRef } from 'react';
 import { KokoroTTS } from "https://cdn.jsdelivr.net/npm/kokoro-js/+esm";
 
 const KokoroContext = createContext(null);
@@ -8,6 +8,17 @@ export function KokoroProvider({ children }) {
   const [isInitializing, setIsInitializing] = useState(false);
   const [error, setError] = useState(null);
   
+  // Audio state management
+  const audioContextRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const activeSourceRef = useRef(null);
+  const isStoppedRef = useRef(false);
+  const isPausedRef = useRef(false);
+  const currentChunkIndexRef = useRef(0);
+  const isStreamingRef = useRef(false);
+  const playbackPromiseRef = useRef(null);
+  
+  // Initialize Kokoro
   useEffect(() => {
     async function initKokoro() {
       if (kokoroTTS || isInitializing) return;
@@ -17,16 +28,9 @@ export function KokoroProvider({ children }) {
         console.log("Starting Kokoro initialization...");
         const model_id = "onnx-community/Kokoro-82M-v1.0-ONNX";
         
-        // Log the device capabilities
-        console.log("Browser capabilities:", {
-          hasWebGPU: 'gpu' in navigator,
-          userAgent: navigator.userAgent,
-          platform: navigator.platform
-        });
-        
         const tts = await KokoroTTS.from_pretrained(model_id, {
-          dtype: "fp32",  // Use q8 for mobile compatibility
-          device: "webgpu",  // Use WASM for broader device support
+          dtype: "fp32",
+          device: "webgpu",
           vocoder_top_k: 128,
           interpolate_text: true
         });
@@ -34,11 +38,7 @@ export function KokoroProvider({ children }) {
         console.log("Kokoro initialized successfully");
         setKokoroTTS(tts);
       } catch (err) {
-        console.error("Kokoro initialization failed:", {
-          message: err.message,
-          stack: err.stack,
-          name: err.name
-        });
+        console.error("Kokoro initialization failed:", err);
         setError(err.message);
       } finally {
         setIsInitializing(false);
@@ -48,171 +48,331 @@ export function KokoroProvider({ children }) {
     initKokoro();
   }, []);
   
-  async function generateAndPlayAudio(text, voice = "af_heart") {
-    if (!kokoroTTS) return;
+  // Initialize audio context
+  const getAudioContext = () => {
+    if (!audioContextRef.current) {
+      audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    return audioContextRef.current;
+  };
+  
+  // Stop all audio and reset state
+  const stopAllAudio = () => {
+    console.log("STOP: Stopping all audio");
+    isStoppedRef.current = true;
+    isPausedRef.current = false;
     
-    console.log("Generating speech for: " + text);
-    try {
-      const result = await kokoroTTS.generate(text, {voice});
-      console.log("Generated result with length:", result.audio.length);
-
-      const samplingRate = result.sampling_rate || 24000;
-      
-      if (result.audio && result.audio.length) {
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        const audioBuffer = audioContext.createBuffer(1, result.audio.length, samplingRate);
-        audioBuffer.getChannelData(0).set(result.audio);
+    // Stop active source
+    if (activeSourceRef.current) {
+      try {
+        activeSourceRef.current.stop();
+        activeSourceRef.current.disconnect();
+        console.log("STOP: Active source stopped");
+      } catch (e) {
+        console.error("STOP: Error stopping active source:", e);
+      }
+      activeSourceRef.current = null;
+    }
+    
+    // Close and recreate audio context for a clean slate
+    if (audioContextRef.current) {
+      try {
+        audioContextRef.current.close();
+        console.log("STOP: Audio context closed");
+      } catch (e) {
+        console.error("STOP: Error closing audio context:", e);
+      }
+      audioContextRef.current = null;
+    }
+    
+    return true;
+  };
+  
+  // Pause audio playback
+  const pauseAudio = () => {
+    console.log(`PAUSE: Pausing audio at chunk ${currentChunkIndexRef.current}`);
+    isPausedRef.current = true;
+    
+    // Pause active source
+    if (activeSourceRef.current) {
+      try {
+        activeSourceRef.current.stop();
+        console.log("PAUSE: Active source stopped for pause");
+      } catch (e) {
+        console.error("PAUSE: Error stopping active source:", e);
+      }
+      activeSourceRef.current = null;
+    }
+    
+    return true;
+  };
+  
+  // Resume audio playback from where it was paused
+  const resumeAudio = async () => {
+    console.log(`RESUME: Resuming audio from chunk ${currentChunkIndexRef.current}`);
+    
+    if (!audioChunksRef.current || audioChunksRef.current.length === 0) {
+      console.error("RESUME: No audio chunks available");
+      return false;
+    }
+    
+    isPausedRef.current = false;
+    isStoppedRef.current = false;
+    
+    // Start playing from current chunk index (NOT incrementing it)
+    return playFromIndex(currentChunkIndexRef.current);
+  };
+  
+  // Toggle play/pause
+  const togglePlayPause = async () => {
+    if (isPausedRef.current) {
+      return resumeAudio();
+    } else if (activeSourceRef.current) {
+      return pauseAudio();
+    } else if (audioChunksRef.current.length > 0) {
+      return resumeAudio();
+    }
+    return false;
+  };
+  
+  // Check if audio is currently playing
+  const isPlaying = () => {
+    return activeSourceRef.current !== null && !isPausedRef.current;
+  };
+  
+  // Check if audio is paused
+  const isPausedState = () => {
+    return isPausedRef.current;
+  };
+  
+  // Play a single audio chunk
+  const playAudioChunk = (audioData, samplingRate) => {
+    return new Promise((resolve, reject) => {
+      try {
+        if (isStoppedRef.current) {
+          console.log("PLAY: Skipping playback as stopped flag is set");
+          resolve();
+          return;
+        }
+        
+        if (isPausedRef.current) {
+          console.log("PLAY: Skipping playback as paused flag is set");
+          resolve();
+          return;
+        }
+        
+        const audioContext = getAudioContext();
+        const audioBuffer = audioContext.createBuffer(1, audioData.length, samplingRate);
+        audioBuffer.getChannelData(0).set(audioData);
         
         const source = audioContext.createBufferSource();
         source.buffer = audioBuffer;
         source.connect(audioContext.destination);
+        
+        // Store active source
+        activeSourceRef.current = source;
+        
+        // Set up onended handler
+        source.onended = () => {
+          console.log("PLAY: Chunk playback ended normally");
+          if (activeSourceRef.current === source) {
+            activeSourceRef.current = null;
+          }
+          resolve();
+        };
+        
+        // Start playback
         source.start();
-        console.log("Audio playback started");
-
+        console.log("PLAY: Chunk playback started");
+      } catch (error) {
+        console.error("PLAY: Error setting up audio playback:", error);
+        if (activeSourceRef.current) {
+          activeSourceRef.current = null;
+        }
+        resolve(); // Resolve anyway to continue
       }
-      return true;
-    } catch (error) {
-      console.error("Error generating or playing audio:", error);
-      return false;
-    } finally {
-      console.log("Audio generation completed");
-    }
-  }
+    });
+  };
   
-  async function streamAndPlayAudio(text, options = {}) {
-    if (!kokoroTTS) return false;
+  // Sequential playback function
+  const playSequentially = async (startIndex) => {
+    if (startIndex < 0 || audioChunksRef.current.length === 0) return;
     
-    const { onComplete } = options || {};
+    // Set the current chunk index
+    currentChunkIndexRef.current = startIndex;
     
-    console.log("Streaming speech for: " + text);
-
+    for (let i = startIndex; i < audioChunksRef.current.length; i++) {
+      if (isStoppedRef.current) {
+        console.log("PLAY SEQ: Stopped, breaking playback loop");
+        break;
+      }
+      if (isPausedRef.current) {
+        console.log(`PLAY SEQ: Paused at chunk ${i}, saving index and breaking playback loop`);
+        // Keep the current chunk index as is - when we resume, we'll start from this same chunk
+        break;
+      }
+      
+      const { audioData, samplingRate } = audioChunksRef.current[i];
+      
+      // Update current index before playing the chunk
+      currentChunkIndexRef.current = i;
+      console.log(`PLAY SEQ: Playing chunk ${i + 1} of ${audioChunksRef.current.length}`);
+      
+      // Play the chunk and wait for it to complete or be interrupted
+      await playAudioChunk(audioData, samplingRate);
+      
+      // If we were paused during this chunk's playback, break the loop
+      // but don't increment the current chunk index
+      if (isPausedRef.current) {
+        console.log(`PLAY SEQ: Paused after playing chunk ${i}, keeping index and breaking loop`);
+        break;
+      }
+    }
+  };
+  
+  // Stream and play audio - this is the main function that handles streaming
+  async function streamAndPlayAudio(text) {
+    if (!kokoroTTS) {
+      console.error("Kokoro TTS not initialized");
+      return false;
+    }
+    
+    // Stop any existing audio and reset state
+    stopAllAudio();
+    audioChunksRef.current = [];
+    currentChunkIndexRef.current = 0;
+    isStoppedRef.current = false;
+    isPausedRef.current = false;
+    isStreamingRef.current = true;
+    
+    console.log("STREAM: Starting to stream speech for text");
     try {
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      // Get a fresh audio context
+      const audioContext = getAudioContext();
       await audioContext.resume();
       
       const { TextSplitterStream } = await import("https://cdn.jsdelivr.net/npm/kokoro-js/+esm");
       const splitter = new TextSplitterStream();
       
-      // Use the correct voice format
       const stream = kokoroTTS.stream(splitter, {
         voice: "am_onyx"
       });
       
-      // Keep all chunks and track current playing index
-      const audioChunks = [];
-      let currentPlayIndex = 0;
-      let isPlaying = false;
-      let playbackFinished = false;
+      // Start playback in a separate promise that we can track
+      playbackPromiseRef.current = playSequentially(0);
       
-      const playChunkAtIndex = async (index) => {
-        if (index >= audioChunks.length || isPlaying) return;
-        
-        isPlaying = true;
-        const { audioData, samplingRate } = audioChunks[index];
-        
-        try {
-          const audioBuffer = audioContext.createBuffer(1, audioData.length, samplingRate);
-          audioBuffer.getChannelData(0).set(audioData);
-          
-          const source = audioContext.createBufferSource();
-          source.buffer = audioBuffer;
-          source.connect(audioContext.destination);
-          
-          source.onended = () => {
-            console.log(`Chunk ${index} finished playing, moving to next chunk`);
-            isPlaying = false;
-            
-            // Move to next chunk
-            currentPlayIndex++;
-            
-            // Check if we've reached the end
-            if (currentPlayIndex >= audioChunks.length) {
-              if (playbackFinished && onComplete) {
-                console.log("All chunks played, calling onComplete");
-                onComplete();
-              }
-              return;
-            }
-            
-            // Play the next chunk
-            playChunkAtIndex(currentPlayIndex);
-          };
-          
-          source.start();
-          console.log(`Playing chunk ${index}, total chunks: ${audioChunks.length}`);
-
-        } catch (playError) {
-          console.error(`Error playing audio chunk ${index}:`, playError);
-          isPlaying = false;
-          
-          // Try to recover by moving to next chunk
-          currentPlayIndex++;
-          if (currentPlayIndex < audioChunks.length) {
-            playChunkAtIndex(currentPlayIndex);
-          } else if (playbackFinished && onComplete) {
-            onComplete();
-          }
-        }
-      };
-      
-      // Process stream
+      // Process stream in parallel with playback
       (async () => {
         try {
           let chunkCount = 0;
           for await (const chunk of stream) {
-            console.log(`Received chunk ${chunkCount++}:`, chunk);
-
+            // Check if stopped
+            if (isStoppedRef.current) {
+              console.log("STREAM: Playback was stopped, exiting stream processing");
+              break;
+            }
+            
             if (chunk.audio && chunk.audio.audio && chunk.audio.audio.length > 0) {
-              console.log("Found audio data with length:", chunk.audio.audio.length);
-
               const audioData = chunk.audio.audio;
               const samplingRate = chunk.audio.sampling_rate || 24000;
               
-              // Add to our collection
-              audioChunks.push({ audioData, samplingRate });
-              console.log("Added chunk to collection, total chunks:", audioChunks.length);
-
-              // If this is the first chunk or we're not currently playing, start playback
-              if (audioChunks.length === 1 || !isPlaying) {
-                playChunkAtIndex(currentPlayIndex);
+              // Add chunk to our collection
+              audioChunksRef.current.push({ audioData, samplingRate });
+              chunkCount++;
+              
+              console.log(`STREAM: Added chunk ${chunkCount}, total chunks now: ${audioChunksRef.current.length}`);
+              
+              // If this is the first chunk and we're not already playing, start playback
+              if (audioChunksRef.current.length === 1 && !activeSourceRef.current && !isPausedRef.current) {
+                console.log("STREAM: Starting playback of first chunk");
+                playbackPromiseRef.current = playSequentially(0);
               }
-            } else {
-              console.warn("Empty audio chunk received:", chunk);
             }
           }
           
-          console.log("Stream processing completed");
-          playbackFinished = true;
-          
-          // If we've already played all chunks, call onComplete
-          if (currentPlayIndex >= audioChunks.length && onComplete) {
-            console.log("All chunks already played, calling onComplete");
-            onComplete();
-          }
+          console.log("STREAM: Stream processing completed, all chunks collected");
+          isStreamingRef.current = false;
         } catch (streamError) {
-          console.error("Error in stream processing:", streamError);
-          if (onComplete) onComplete();
+          console.error("STREAM: Error in stream processing:", streamError);
+          isStreamingRef.current = false;
         }
       })();
       
       // Push tokens to stream
       const tokens = text.match(/\s*\S+/g) || [text];
-      console.log(`Pushing ${tokens.length} tokens to stream`);
-
+      console.log(`STREAM: Pushing ${tokens.length} tokens to stream`);
+      
       for (const token of tokens) {
-        console.log("Pushing token:", token);
+        if (isStoppedRef.current) break;
         splitter.push(token);
         await new Promise(resolve => setTimeout(resolve, 20));
       }
       
       splitter.close();
+      
+      // Wait for playback to complete
+      if (playbackPromiseRef.current) {
+        await playbackPromiseRef.current;
+      }
+      
       return true;
     } catch (error) {
-      console.error("Error setting up streaming:", error);
-      if (onComplete) onComplete();
+      console.error("STREAM: Error setting up streaming:", error);
+      isStreamingRef.current = false;
       return false;
     }
   }
+  
+  // Play from a specific index
+  async function playFromIndex(index) {
+    console.log(`PLAY FROM: Attempting to play from index ${index}`);
+    
+    if (!audioChunksRef.current || audioChunksRef.current.length === 0) {
+      console.error("PLAY FROM: No audio chunks available");
+      return false;
+    }
+    
+    // Reset flags but keep chunks
+    isStoppedRef.current = false;
+    isPausedRef.current = false;
+    
+    // Validate index
+    if (index < 0 || index >= audioChunksRef.current.length) {
+      console.error(`PLAY FROM: Invalid index ${index}. Available range: 0-${audioChunksRef.current.length - 1}`);
+      return false;
+    }
+    
+    try {
+      // Play chunks sequentially from the specified index
+      await playSequentially(index);
+      return true;
+    } catch (error) {
+      console.error("PLAY FROM: Error during playback:", error);
+      return false;
+    }
+  }
+  
+  // Get chunk count
+  function getAudioChunksCount() {
+    return audioChunksRef.current ? audioChunksRef.current.length : 0;
+  }
+  
+  // Get current chunk index
+  function getCurrentChunkIndex() {
+    return currentChunkIndexRef.current;
+  }
+  
+  // Check if currently streaming
+  function isStreaming() {
+    return isStreamingRef.current;
+  }
+  
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      stopAllAudio();
+    };
+  }, []);
   
   return (
     <KokoroContext.Provider 
@@ -220,8 +380,17 @@ export function KokoroProvider({ children }) {
         kokoroTTS, 
         isInitializing, 
         error, 
-        generateAndPlayAudio, 
-        streamAndPlayAudio 
+        streamAndPlayAudio,
+        playFromIndex,
+        pauseAudio,
+        resumeAudio,
+        togglePlayPause,
+        isPlaying,
+        isPaused: isPausedState,
+        isStreaming,
+        getAudioChunksCount,
+        getCurrentChunkIndex,
+        stopAllAudio
       }}
     >
       {children}

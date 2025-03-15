@@ -1,0 +1,112 @@
+.tts-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0;
+}
+
+.tts-button {
+  padding: 8px 16px;
+  background-color: var(--primary-color, #4a90e2);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.tts-button:hover {
+  background-color: var(--primary-color-dark, #3a80d2);
+}
+
+.resume-controls {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.resume-index-input {
+  width: 50px;
+  padding: 6px;
+  border: 1px solid var(--border-color, #ccc);
+  border-radius: 4px;
+  text-align: center;
+}
+
+:root.dark .tts-button {
+  background-color: var(--primary-color-dark, #3a80d2);
+}
+
+:root.dark .tts-button:hover {
+  background-color: var(--primary-color, #4a90e2);
+}
+
+:root.dark .resume-index-input {
+  background-color: var(--bg-secondary, #333);
+  color: var(--text-primary, #fff);
+  border-color: var(--border-color-dark, #555);
+}
+
+.stop-button {
+  background-color: var(--danger-color, #e74c3c);
+  color: white;
+  font-weight: bold;
+  padding: 8px 16px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  margin-left: 10px;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.stop-button:hover {
+  background-color: var(--danger-color-dark, #c0392b);
+}
+
+:root.dark .stop-button {
+  background-color: var(--danger-color-dark, #c0392b);
+}
+
+:root.dark .stop-button:hover {
+  background-color: var(--danger-color, #e74c3c);
+}
+
+.tts-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.play-pause-button {
+  min-width: 100px;
+  background-color: var(--primary-color, #4a90e2);
+}
+
+.play-pause-button.playing {
+  background-color: var(--warning-color, #f39c12);
+}
+
+.play-pause-button.paused {
+  background-color: var(--success-color, #2ecc71);
+}
+
+.progress-info {
+  margin-left: 10px;
+  font-size: 0.9rem;
+  color: var(--text-secondary, #666);
+}
+
+:root.dark .progress-info {
+  color: var(--text-secondary-dark, #aaa);
+} 
