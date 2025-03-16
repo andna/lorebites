@@ -8,7 +8,6 @@ export function SinglePost({ post, onBack }) {
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [processedContent, setProcessedContent] = useState('');
   const [totalSentences, setTotalSentences] = useState(0);
-  const [allSentences, setAllSentences] = useState([]);
   const contentRef = useRef(null);
   
   // Process HTML content on component mount
@@ -81,7 +80,6 @@ export function SinglePost({ post, onBack }) {
       sentenceMatches.forEach((sentence, index) => {
         if (!sentence.trim()) return;
         
-        setAllSentences(allSentences => [...allSentences, sentence.replace(/\./g, '. ')]);
         let sentenceHtml = sentence;
         const startPos = fullText.indexOf(sentence, lastEnd);
         const endPos = startPos + sentence.length;
@@ -180,7 +178,7 @@ export function SinglePost({ post, onBack }) {
       <div 
         className="post-content" 
         ref={contentRef}
-        dangerouslySetInnerHTML={{ __html: processedContent }}
+        dangerouslySetInnerHTML={{ __html: processedContentMemo }}
       />
       
       <SynthControls
@@ -190,8 +188,8 @@ export function SinglePost({ post, onBack }) {
         setCurrentIndex={setCurrentIndex}
         totalSentences={totalSentences}
       />
-f
-      <KokoroPlayer allSentences={allSentences} />
+
+      <KokoroPlayer />
     </div>
   );
 }

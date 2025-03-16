@@ -212,11 +212,11 @@ export function KokoroProvider({ children }) {
         break;
       }
       
-      const { audioData, samplingRate, text } = audioChunksRef.current[i];
+      const { audioData, samplingRate } = audioChunksRef.current[i];
       
       // Update current index before playing the chunk
       currentChunkIndexRef.current = i;
-      console.log(`PLAY SEQ: Playing chunk ${i + 1} of ${audioChunksRef.current.length}, text: "${text || 'No text available'}"`);
+      console.log(`PLAY SEQ: Playing chunk ${i + 1} of ${audioChunksRef.current.length}`);
       
       // Play the chunk and wait for it to complete or be interrupted
       await playAudioChunk(audioData, samplingRate);
@@ -230,8 +230,8 @@ export function KokoroProvider({ children }) {
     }
   };
   
-  // Stream and play audio with support for pre-split sentences
-  async function streamAndPlayAudio(textOrSentences) {
+  // Stream and play audio - this is the main function that handles streaming
+  async function streamAndPlayAudio(text) {
     if (!kokoroTTS) {
       console.error("Kokoro TTS not initialized");
       return false;
@@ -265,8 +265,6 @@ export function KokoroProvider({ children }) {
       (async () => {
         try {
           let chunkCount = 0;
-          let currentSentence = "";
-          
           for await (const chunk of stream) {
             // Check if stopped
             if (isStoppedRef.current) {
@@ -274,28 +272,15 @@ export function KokoroProvider({ children }) {
               break;
             }
             
-            // If we have text in this chunk, update currentSentence
-            if (chunk.text) {
-              currentSentence += chunk.text;
-            }
-            
             if (chunk.audio && chunk.audio.audio && chunk.audio.audio.length > 0) {
               const audioData = chunk.audio.audio;
               const samplingRate = chunk.audio.sampling_rate || 24000;
               
-              // Store text with the audio data
-              audioChunksRef.current.push({ 
-                audioData, 
-                samplingRate,
-                text: currentSentence.trim() // Store the accumulated text
-              });
-              
+              // Add chunk to our collection
+              audioChunksRef.current.push({ audioData, samplingRate });
               chunkCount++;
               
-              console.log(`STREAM: Added chunk ${chunkCount}, text: "${currentSentence.trim()}"`);
-              
-              // Reset current sentence after storing a chunk
-              currentSentence = "";
+              console.log(`STREAM: Added chunk ${chunkCount}, total chunks now: ${audioChunksRef.current.length}`);
               
               // If this is the first chunk and we're not already playing, start playback
               if (audioChunksRef.current.length === 1 && !activeSourceRef.current && !isPausedRef.current) {
@@ -313,26 +298,14 @@ export function KokoroProvider({ children }) {
         }
       })();
       
-      // Push content to stream based on input type
-      if (Array.isArray(textOrSentences)) {
-        // Input is pre-split sentences array
-        console.log(`STREAM: Processing ${textOrSentences.length} pre-split sentences`);
-        for (const sentence of textOrSentences) {
-          if (isStoppedRef.current) break;
-          splitter.push(sentence);
-          // Add a small delay between sentences for natural pauses
-          await new Promise(resolve => setTimeout(resolve, 50));
-        }
-      } else {
-        // Input is a regular text string, split into tokens
-        const tokens = textOrSentences.match(/\s*\S+/g) || [textOrSentences];
-        console.log(`STREAM: Pushing ${tokens.length} tokens to stream`);
-        
-        for (const token of tokens) {
-          if (isStoppedRef.current) break;
-          splitter.push(token);
-          await new Promise(resolve => setTimeout(resolve, 20));
-        }
+      // Push tokens to stream
+      const tokens = text.match(/\s*\S+/g) || [text];
+      console.log(`STREAM: Pushing ${tokens.length} tokens to stream`);
+      
+      for (const token of tokens) {
+        if (isStoppedRef.current) break;
+        splitter.push(token);
+        await new Promise(resolve => setTimeout(resolve, 20));
       }
       
       splitter.close();
@@ -395,9 +368,7 @@ export function KokoroProvider({ children }) {
   }
   
   // Stream only without playing audio
-  async function streamOnly(textOrSentences) {
-
-    console.log('textOrSentences', textOrSentences)
+  async function streamOnly(text) {
     if (!kokoroTTS) {
       console.error("Kokoro TTS not initialized");
       return false;
@@ -428,8 +399,6 @@ export function KokoroProvider({ children }) {
       (async () => {
         try {
           let chunkCount = 0;
-          let currentSentence = "";
-          
           for await (const chunk of stream) {
             // Check if stopped
             if (isStoppedRef.current) {
@@ -437,28 +406,15 @@ export function KokoroProvider({ children }) {
               break;
             }
             
-            // If we have text in this chunk, update currentSentence
-            if (chunk.text) {
-              currentSentence += chunk.text;
-            }
-            
             if (chunk.audio && chunk.audio.audio && chunk.audio.audio.length > 0) {
               const audioData = chunk.audio.audio;
               const samplingRate = chunk.audio.sampling_rate || 24000;
               
-              // Store text with the audio data
-              audioChunksRef.current.push({ 
-                audioData, 
-                samplingRate,
-                text: currentSentence.trim() // Store the accumulated text
-              });
-              
+              // Add chunk to our collection
+              audioChunksRef.current.push({ audioData, samplingRate });
               chunkCount++;
               
-              console.log(`STREAM ONLY: Added chunk ${chunkCount}, text: "${currentSentence.trim()}"`);
-              
-              // Reset current sentence after storing a chunk
-              currentSentence = "";
+              console.log(`STREAM ONLY: Added chunk ${chunkCount}, total chunks now: ${audioChunksRef.current.length}`);
             }
           }
           
@@ -470,26 +426,14 @@ export function KokoroProvider({ children }) {
         }
       })();
       
-      // Push content to stream based on input type
-      if (Array.isArray(textOrSentences)) {
-        // Input is pre-split sentences array
-        console.log(`STREAM ONLY: Processing ${textOrSentences.length} pre-split sentences`);
-        for (const sentence of textOrSentences) {
-          if (isStoppedRef.current) break;
-          splitter.push(sentence);
-          // Add a small delay between sentences for natural pauses
-          await new Promise(resolve => setTimeout(resolve, 50));
-        }
-      } else {
-        // Input is a regular text string, split into tokens
-        const tokens = textOrSentences.match(/\s*\S+/g) || [textOrSentences];
-        console.log(`STREAM ONLY: Pushing ${tokens.length} tokens to stream`);
-        
-        for (const token of tokens) {
-          if (isStoppedRef.current) break;
-          splitter.push(token);
-          await new Promise(resolve => setTimeout(resolve, 20));
-        }
+      // Push tokens to stream
+      const tokens = text.match(/\s*\S+/g) || [text];
+      console.log(`STREAM ONLY: Pushing ${tokens.length} tokens to stream`);
+      
+      for (const token of tokens) {
+        if (isStoppedRef.current) break;
+        splitter.push(token);
+        await new Promise(resolve => setTimeout(resolve, 20));
       }
       
       splitter.close();
