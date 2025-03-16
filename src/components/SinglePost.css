@@ -35,19 +35,19 @@
   text-decoration: underline;
 }
 
-.sentence {
+.post-content .sentence {
   cursor: pointer;
-  padding: 2px 0;
-  border-radius: 2px;
-  transition: background-color 0.2s ease;
+  transition: background-color 0.3s ease;
 }
 
-.sentence:hover {
-  background-color: var(--sentence-hover, rgba(74, 111, 165, 0.1));
+/* Increased specificity */
+.post-view .post-content .sentence.reading {
+  background-color: rgba(74, 144, 226, 0.2) !important; /* Added !important for extra assurance */
 }
 
-.sentence.reading {
-  background-color: var(--sentence-active, rgba(74, 111, 165, 0.2));
+/* Dark mode support */
+:root.dark .post-view .post-content .sentence.reading {
+  background-color: rgba(74, 144, 226, 0.3) !important;
 }
 
 .post-controls {

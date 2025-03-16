@@ -1,43 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { formatRelativeTime, getReadingTime, getReadingTimeInSeconds } from '../utils/formatters';
-import { AudioControls } from './AudioControls';
+import { formatRelativeTime } from '../utils/formatters';
+import { SynthControls } from './SynthControls';
 import { KokoroPlayer } from './KokoroPlayer';
 import './SinglePost.css';
 
 export function SinglePost({ post, onBack }) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(-1);
   const [processedContent, setProcessedContent] = useState('');
   const [totalSentences, setTotalSentences] = useState(0);
-  
-  // Use refs to access current state in callbacks
-  const currentIndexRef = useRef(0);
-  const isPlayingRef = useRef(false);
-  const progressTimerRef = useRef(null);
   const contentRef = useRef(null);
-  const utteranceRef = useRef(null);
-  const totalSeconds = getReadingTimeInSeconds(post.selftext);
-  
-  // Keep refs in sync with state
-  useEffect(() => {
-    currentIndexRef.current = currentIndex;
-  }, [currentIndex]);
-  
-  useEffect(() => {
-    isPlayingRef.current = isPlaying;
-  }, [isPlaying]);
-  
-  // Format time for display
-  const formatTime = (seconds) => {
-    if (seconds < 60) {
-      return `0:${seconds.toString().padStart(2, '0')}`;
-    } else {
-      const minutes = Math.floor(seconds / 60);
-      const remainingSeconds = seconds % 60;
-      return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
-    }
-  };
   
   // Process HTML content on component mount
   useEffect(() => {
@@ -56,11 +27,7 @@ export function SinglePost({ post, onBack }) {
     };
     
     // Reset state when post changes
-    setCurrentIndex(0);
-    currentIndexRef.current = 0;
-    setElapsedSeconds(0);
-    setIsPlaying(false);
-    isPlayingRef.current = false;
+    setCurrentIndex(-1);
     
     // Process the HTML content
     const decodedHtml = decodeHtml(post.selftext_html.replace(/<!--.*?-->/g, ''));
@@ -148,200 +115,40 @@ export function SinglePost({ post, onBack }) {
     
   }, [post]);
   
-  // Cancel any ongoing speech and clean up
-  const stopSpeech = () => {
-    if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
-      window.speechSynthesis.cancel();
-    }
-    
-    if (progressTimerRef.current) {
-      clearInterval(progressTimerRef.current);
-      progressTimerRef.current = null;
-    }
-    
-    // Clear any highlighting
-    if (contentRef.current) {
-      const highlights = contentRef.current.querySelectorAll('.reading');
-      highlights.forEach(el => el.classList.remove('reading'));
-    }
-    
-    utteranceRef.current = null;
-  };
-  
-  // Function to speak a specific sentence
-  const speakSentence = (index) => {
-    if (!contentRef.current) return;
-    
-    // Ensure index is valid
-    if (index >= totalSentences) {
-      setIsPlaying(false);
-      isPlayingRef.current = false;
-      setCurrentIndex(0);
-      currentIndexRef.current = 0;
-      return;
-    }
-    
-    // Stop any ongoing speech first
-    stopSpeech();
-    
-    // Update current index
-    setCurrentIndex(index);
-    currentIndexRef.current = index;
-    
-    // Get and highlight the sentence
-    const sentenceElements = contentRef.current.querySelectorAll('.sentence');
-    const currentSentence = sentenceElements[index];
-    
-    if (!currentSentence) {
-      console.error(`No sentence found at index ${index}`);
-      return;
-    }
-    
-    currentSentence.classList.add('reading');
-    
-    // Create and configure utterance
-    const utterance = new SpeechSynthesisUtterance(currentSentence.textContent);
-    utteranceRef.current = utterance;
-    
-    // Start progress timer
-    progressTimerRef.current = setInterval(() => {
-      setElapsedSeconds(prev => {
-        const newValue = prev + 1;
-        if (newValue > totalSeconds + 30) {
-          clearInterval(progressTimerRef.current);
-        }
-        return newValue;
-      });
-    }, 1000);
-    
-    // Handle speech end
-    utterance.onend = () => {
-      // Remove highlight from current sentence
-      currentSentence.classList.remove('reading');
-      
-      // Check if we're still playing (might have been paused/stopped)
-      if (isPlayingRef.current) {
-        const nextIndex = currentIndexRef.current + 1;
-        if (nextIndex < totalSentences) {
-          // Continue to next sentence
-          setCurrentIndex(nextIndex);
-          currentIndexRef.current = nextIndex;
-          requestAnimationFrame(() => {
-            speakSentence(nextIndex);
-          });
-        } else {
-          // End of text
-          setIsPlaying(false);
-          isPlayingRef.current = false;
-          clearInterval(progressTimerRef.current);
-          progressTimerRef.current = null;
-        }
-      }
-    };
-    
-    // Handle errors
-    utterance.onerror = (event) => {
-      console.error('Speech synthesis error:', event);
-      clearInterval(progressTimerRef.current);
-      currentSentence.classList.remove('reading');
-    };
-    
-    // Start speaking
-    window.speechSynthesis.speak(utterance);
-  };
-  
-  // Attach click handlers to sentences
+  // Highlight the current sentence whenever currentIndex changes
   useEffect(() => {
     if (!contentRef.current) return;
     
-    const handleSentenceClick = (event) => {
-      const sentenceElement = event.target.closest('.sentence');
-      if (sentenceElement) {
-        const index = parseInt(sentenceElement.getAttribute('data-index'), 10);
-        if (!isNaN(index)) {
-          stopSpeech();
-          setIsPlaying(true);
-          isPlayingRef.current = true;
-          speakSentence(index);
-        }
-      }
-    };
-    
-    contentRef.current.addEventListener('click', handleSentenceClick);
-    
-    return () => {
-      if (contentRef.current) {
-        contentRef.current.removeEventListener('click', handleSentenceClick);
-      }
-    };
-  }, [processedContent, totalSentences]);
-  
-  // Set up speech synthesis cleanup
-  useEffect(() => {
-    return () => {
-      stopSpeech();
-    };
-  }, []);
-  
-  // Handle play button click
-  const handlePlay = () => {
-    if (totalSentences === 0) return;
-    
-    setIsPlaying(true);
-    isPlayingRef.current = true;
-    
-    if (window.speechSynthesis.paused) {
-      window.speechSynthesis.resume();
+    // Function to apply highlighting
+    const applyHighlighting = () => {
+      // First remove all highlights
+      const allSentences = contentRef.current.querySelectorAll('.sentence');
+      allSentences.forEach(el => el.classList.remove('reading'));
       
-      // Restart the timer
-      progressTimerRef.current = setInterval(() => {
-        setElapsedSeconds(prev => prev + 1);
-      }, 1000);
-    } else {
-      // Start from current index (or from beginning if at the end)
-      const startIndex = currentIndexRef.current >= totalSentences ? 0 : currentIndexRef.current;
-      speakSentence(startIndex);
-    }
-  };
-  
-  // Handle pause button click
-  const handlePause = () => {
-    if (window.speechSynthesis.speaking) {
-      window.speechSynthesis.pause();
-    }
+      // Then apply the new highlight
+      const currentSentence = contentRef.current.querySelector(`.sentence[data-index="${currentIndex}"]`);
+      if (currentSentence) {
+        currentSentence.classList.add('reading');
+        
+        // Ensure the class was applied
+        if (!currentSentence.classList.contains('reading')) {
+          // Fallback: use inline style if classList doesn't work
+          currentSentence.style.backgroundColor = 'rgba(74, 144, 226, 0.2)';
+        }
+        
+        // Scroll to the element
+        currentSentence.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    };
     
-    setIsPlaying(false);
-    isPlayingRef.current = false;
+    // Apply highlighting immediately
+    applyHighlighting();
     
-    // Pause the timer
-    if (progressTimerRef.current) {
-      clearInterval(progressTimerRef.current);
-      progressTimerRef.current = null;
-    }
-  };
-  
-  // Handle slider input (while dragging)
-  const handleSliderInput = (e) => {
-    const newIndex = parseInt(e.target.value);
-    // Update displayed progress time while dragging
-    const newElapsedSeconds = Math.floor((newIndex / totalSentences) * totalSeconds);
-    setElapsedSeconds(newElapsedSeconds);
-  };
-  
-  // Handle slider change (after dragging)
-  const handleSliderChange = (e) => {
-    const newIndex = parseInt(e.target.value);
-    stopSpeech();
-    setIsPlaying(true);
-    isPlayingRef.current = true;
-    speakSentence(newIndex);
-  };
-  
-  // Handle back button
-  const handleBack = () => {
-    stopSpeech();
-    onBack();
-  };
+    // And also after a short delay to catch any race conditions
+    const timer = setTimeout(applyHighlighting, 50);
+    
+    return () => clearTimeout(timer);
+  }, [currentIndex]);
   
   return (
     <div className="post-view">
@@ -374,19 +181,13 @@ export function SinglePost({ post, onBack }) {
         dangerouslySetInnerHTML={{ __html: processedContent }}
       />
       
-      <AudioControls
-        isPlaying={isPlaying}
-        onPlay={handlePlay}
-        onPause={handlePause}
-        currentTime={formatTime(elapsedSeconds)}
-        totalTime={getReadingTime(post.selftext)}
-        currentIndex={currentIndex}
-        totalChunks={totalSentences}
-        onSliderChange={handleSliderChange}
-        onSliderInput={handleSliderInput}
-        className="post-controls"
+      <SynthControls
+        text={post.selftext}
+        contentRef={contentRef}
+        currentIndex={currentIndex >= 0 ? currentIndex : 0}
+        setCurrentIndex={setCurrentIndex}
+        totalSentences={totalSentences}
       />
-
 
       <KokoroPlayer />
     </div>
