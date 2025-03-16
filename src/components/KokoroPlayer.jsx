@@ -1,0 +1,258 @@
+import React, { useState, useEffect } from 'react';
+import { useKokoro } from '../context/KokoroContext';
+import './KokoroPlayer.css';
+
+export function KokoroPlayer() {
+  const { 
+    generateAndPlayAudio,
+    streamAndPlayAudio,
+    streamOnly,
+    playFromIndex, 
+    getAudioChunksCount, 
+    stopAllAudio,
+    isInitializing,
+    error,
+    togglePlayPause,
+    isPlaying,
+    isPaused,
+    getCurrentChunkIndex,
+    isStreaming
+  } = useKokoro();
+  
+  const [resumeIndex, setResumeIndex] = useState(3);
+  const [playbackState, setPlaybackState] = useState('stopped'); // 'playing', 'paused', 'stopped'
+  const [progressText, setProgressText] = useState('No audio available');
+  const [isLoading, setIsLoading] = useState(false);
+  
+  const sampleText = `I sprinted through the cornfield, the stalks clawing at me like fingers. Behind me, I could hear them—smell the acrid burn of their torches.
+
+The mob.
+
+I clutched my child to my chest, the only thing she had left in the world. I, her mother, her protector.
+
+Grief had already tried to pull me below, and for a time, I drowned in madness beneath the ruins of my life. The fever had stolen my whole kin, leaving just me and my babe.
+
+They wanted to take her from me. From her own mother. They thought I wasn't fit to care for her. I couldn't let them. I pressed the small body, wrapped in a potato sack, close to my heart.
+
+Crows burst from the stalks, black ink splattered against the gray sky. My lungs burned, my legs screamed in protest.
+
+To my left, something tore through the corn, snapping stalks as it came. The dogs. Wicked beasts with teeth like rake tines, sniffing out my trail, eager to rip flesh from bone. They hadn't reached me yet, but they would.`;
+  
+  // Update playback state and progress text regularly
+  useEffect(() => {
+    const updateState = () => {
+      // Update playback state
+      if (isPlaying()) {
+        setPlaybackState('playing');
+      } else if (isPaused()) {
+        setPlaybackState('paused');
+      } else {
+        setPlaybackState('stopped');
+      }
+      
+      // Update progress text
+      const total = getAudioChunksCount();
+      const current = getCurrentChunkIndex();
+      
+      if (total === 0) {
+        setProgressText('No audio available');
+      } else if (isStreaming()) {
+        setProgressText(`Streaming: ${total} chunks so far...`);
+      } else {
+        // Add 1 to indexes for display (1-based instead of 0-based)
+        setProgressText(`Chunk ${current + 1} of ${total}`);
+      }
+      
+      // Set loading state based on streaming status
+      setIsLoading(isStreaming());
+    };
+    
+    // Update immediately
+    updateState();
+    
+    // Set up interval to update regularly
+    const interval = setInterval(updateState, 100);
+    
+    return () => clearInterval(interval);
+  }, [isPlaying, isPaused, isStreaming, getAudioChunksCount, getCurrentChunkIndex]);
+  
+  // Handle Stream TTS button click
+  const handleTestTTS = async () => {
+    // Stop any existing audio first
+    stopAllAudio();
+    
+    setIsLoading(true);
+    await streamOnly(sampleText);
+    // State will be updated by the effect
+  };
+  
+  // Handle Play button
+  const handlePlay = async () => {
+    if (getAudioChunksCount() === 0) {
+      // No chunks available, can't play
+      alert('No audio chunks available. Stream the audio first.');
+      return;
+    }
+    
+    // Ensure any existing audio is completely stopped
+    stopAllAudio();
+    
+    // Add a small delay to ensure audio context is properly reset
+    await new Promise(resolve => setTimeout(resolve, 50));
+    
+    await playFromIndex(0);
+  };
+  
+  // Handle Resume From button click
+  const handleResumeTTS = async () => {
+    const chunksCount = getAudioChunksCount();
+    if (chunksCount === 0) {
+      alert('No audio chunks available. Stream the audio first.');
+      return;
+    }
+    
+    // Ensure any existing audio is completely stopped before starting new playback
+    stopAllAudio();
+    
+    // Add a small delay to ensure audio context is properly reset
+    await new Promise(resolve => setTimeout(resolve, 50));
+    
+    // Make sure the index is valid
+    const index = Math.min(resumeIndex, chunksCount - 1);
+    console.log(`Starting playback from chunk ${index} of ${chunksCount}`);
+    
+    await playFromIndex(index);
+  };
+  
+  // Handle Play/Pause toggle
+  const handlePlayPause = async () => {
+    if (playbackState === 'playing') {
+      // Currently playing, so pause
+      await togglePlayPause();
+    } else if (playbackState === 'paused' || getAudioChunksCount() > 0) {
+      // Currently paused or has chunks to play
+      await togglePlayPause();
+    } else {
+      // No audio chunks, alert user
+      alert('No audio chunks available. Stream the audio first.');
+    }
+  };
+  
+  // Add floating buttons for quick testing
+  useEffect(() => {
+    if (isInitializing || error) return;
+    
+    // Create test buttons
+    const shortButton = document.createElement('button');
+    shortButton.textContent = "Quick TTS";
+    shortButton.className = "tts-short-button";
+    Object.assign(shortButton.style, {
+      position: 'fixed',
+      bottom: '20px',
+      right: '150px',
+      padding: '10px 15px',
+      background: '#28a745',
+      color: 'white',
+      border: 'none',
+      borderRadius: '5px',
+      cursor: 'pointer'
+    });
+    shortButton.addEventListener('click', () => {
+      // Stop any existing audio first
+      stopAllAudio();
+      const shortText = "For this example, let's pretend we're consuming text from an LLM, one word at a time.";
+      generateAndPlayAudio(shortText);
+    });
+    
+    const testButton = document.createElement('button');
+    testButton.textContent = "Test TTS";
+    testButton.className = "tts-test-button";
+    Object.assign(testButton.style, {
+      position: 'fixed',
+      bottom: '20px',
+      right: '20px',
+      padding: '10px 15px',
+      background: '#4a6fa5',
+      color: 'white',
+      border: 'none',
+      borderRadius: '5px',
+      cursor: 'pointer'
+    });
+    testButton.addEventListener('click', () => {
+      // Stop any existing audio first
+      stopAllAudio();
+      streamAndPlayAudio(sampleText);
+    });
+    
+    document.body.appendChild(shortButton);
+    document.body.appendChild(testButton);
+    
+    return () => {
+      document.body.removeChild(shortButton);
+      document.body.removeChild(testButton);
+    };
+  }, [isInitializing, error, generateAndPlayAudio, streamAndPlayAudio, stopAllAudio]);
+
+  return (
+    <div className="kokoro-player">
+      {isInitializing ? (
+        <div className="loading-indicator">Initializing TTS...</div>
+      ) : error ? (
+        <div className="error-message">Error: {error}</div>
+      ) : (
+        <>
+          <button 
+            className="tts-button"
+            onClick={handleTestTTS}
+            disabled={isLoading || playbackState === 'playing'}
+          >
+            {isLoading ? 'Streaming...' : 'Stream TTS'}
+          </button>
+          
+          <button 
+            className="tts-button"
+            onClick={handlePlay}
+            disabled={isLoading || playbackState === 'playing' || getAudioChunksCount() === 0}
+          >
+            Play All
+          </button>
+          
+          <div className="resume-controls">
+            <button 
+              className="tts-button"
+              onClick={handleResumeTTS}
+              disabled={resumeIndex >= getAudioChunksCount()}
+            >
+              Resume From
+            </button>
+            <input 
+              type="number" 
+              min="0" 
+              max={Math.max(0, getAudioChunksCount() - 1)}
+              value={resumeIndex} 
+              onChange={(e) => {
+                const val = parseInt(e.target.value, 10) || 0;
+                const max = Math.max(0, getAudioChunksCount() - 1);
+                setResumeIndex(Math.min(val, max));
+              }} 
+              className="resume-index-input"
+              disabled={playbackState === 'playing'}
+            />
+          </div>
+          
+          <button 
+            className={`tts-button play-pause-button ${playbackState}`}
+            onClick={handlePlayPause}
+            disabled={getAudioChunksCount() === 0 && playbackState === 'stopped'}
+          >
+            {playbackState === 'playing' ? '⏸️ Pause' : '▶️ Play'}
+          </button>
+          
+          <div className="progress-info">
+            {progressText}
+          </div>
+        </>
+      )}
+    </div>
+  );
+} 

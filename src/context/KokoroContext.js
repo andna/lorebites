@@ -367,6 +367,84 @@ export function KokoroProvider({ children }) {
     return isStreamingRef.current;
   }
   
+  // Stream only without playing audio
+  async function streamOnly(text) {
+    if (!kokoroTTS) {
+      console.error("Kokoro TTS not initialized");
+      return false;
+    }
+    
+    // Stop any existing audio and reset state
+    stopAllAudio();
+    audioChunksRef.current = [];
+    currentChunkIndexRef.current = 0;
+    isStoppedRef.current = false;
+    isPausedRef.current = false;
+    isStreamingRef.current = true;
+    
+    console.log("STREAM ONLY: Starting to stream speech for text");
+    try {
+      // Get a fresh audio context
+      const audioContext = getAudioContext();
+      await audioContext.resume();
+      
+      const { TextSplitterStream } = await import("https://cdn.jsdelivr.net/npm/kokoro-js/+esm");
+      const splitter = new TextSplitterStream();
+      
+      const stream = kokoroTTS.stream(splitter, {
+        voice: "am_onyx"
+      });
+      
+      // Process stream without starting playback
+      (async () => {
+        try {
+          let chunkCount = 0;
+          for await (const chunk of stream) {
+            // Check if stopped
+            if (isStoppedRef.current) {
+              console.log("STREAM ONLY: Streaming was stopped, exiting stream processing");
+              break;
+            }
+            
+            if (chunk.audio && chunk.audio.audio && chunk.audio.audio.length > 0) {
+              const audioData = chunk.audio.audio;
+              const samplingRate = chunk.audio.sampling_rate || 24000;
+              
+              // Add chunk to our collection
+              audioChunksRef.current.push({ audioData, samplingRate });
+              chunkCount++;
+              
+              console.log(`STREAM ONLY: Added chunk ${chunkCount}, total chunks now: ${audioChunksRef.current.length}`);
+            }
+          }
+          
+          console.log("STREAM ONLY: Stream processing completed, all chunks collected");
+          isStreamingRef.current = false;
+        } catch (streamError) {
+          console.error("STREAM ONLY: Error in stream processing:", streamError);
+          isStreamingRef.current = false;
+        }
+      })();
+      
+      // Push tokens to stream
+      const tokens = text.match(/\s*\S+/g) || [text];
+      console.log(`STREAM ONLY: Pushing ${tokens.length} tokens to stream`);
+      
+      for (const token of tokens) {
+        if (isStoppedRef.current) break;
+        splitter.push(token);
+        await new Promise(resolve => setTimeout(resolve, 20));
+      }
+      
+      splitter.close();
+      return true;
+    } catch (error) {
+      console.error("STREAM ONLY: Error setting up streaming:", error);
+      isStreamingRef.current = false;
+      return false;
+    }
+  }
+  
   // Clean up on unmount
   useEffect(() => {
     return () => {
@@ -381,6 +459,7 @@ export function KokoroProvider({ children }) {
         isInitializing, 
         error, 
         streamAndPlayAudio,
+        streamOnly,
         playFromIndex,
         pauseAudio,
         resumeAudio,

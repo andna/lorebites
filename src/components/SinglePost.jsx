@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { formatRelativeTime, getReadingTime, getReadingTimeInSeconds } from '../utils/formatters';
 import { AudioControls } from './AudioControls';
+import { KokoroPlayer } from './KokoroPlayer';
 import './SinglePost.css';
 
 export function SinglePost({ post, onBack }) {
@@ -385,6 +386,9 @@ export function SinglePost({ post, onBack }) {
         onSliderInput={handleSliderInput}
         className="post-controls"
       />
+
+
+      <KokoroPlayer />
     </div>
   );
 }
