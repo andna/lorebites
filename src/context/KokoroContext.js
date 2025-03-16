@@ -171,7 +171,6 @@ export function KokoroProvider({ children }) {
         const source = audioContext.createBufferSource();
         source.buffer = audioBuffer;
         source.playbackRate.value = playbackRate;
-        source.preservePitch = true;
         source.connect(audioContext.destination);
         
         // Store active source
