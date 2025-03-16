@@ -3,7 +3,7 @@ import { useKokoro } from '../context/KokoroContext';
 import './KokoroPlayer.css';
 import { AudioControls } from './AudioControls';
 
-export function KokoroPlayer({ textToStream }) {
+export function KokoroPlayer({ allTextSentences, setCurrentIndex }) {
   const { 
     generateAndPlayAudio,
     streamAndPlayAudio,
@@ -17,7 +17,7 @@ export function KokoroPlayer({ textToStream }) {
     isPlaying,
     isPaused,
     getCurrentChunkIndex,
-    isStreaming
+    isStreaming,
   } = useKokoro();
   
   const [resumeIndex, setResumeIndex] = useState(3);
@@ -39,6 +39,7 @@ export function KokoroPlayer({ textToStream }) {
       // Update progress text
       const total = getAudioChunksCount();
       const current = getCurrentChunkIndex();
+      setCurrentIndex(current);
       
       if (total === 0) {
         setProgressText('No audio available');
@@ -68,7 +69,7 @@ export function KokoroPlayer({ textToStream }) {
     stopAllAudio();
     
     setIsLoading(true);
-    await streamOnly(textToStream);
+    await streamOnly(allTextSentences); 
     // State will be updated by the effect
   };
   
@@ -173,7 +174,7 @@ export function KokoroPlayer({ textToStream }) {
     testButton.addEventListener('click', () => {
       // Stop any existing audio first
       stopAllAudio();
-      streamAndPlayAudio(textToStream);
+      streamAndPlayAudio(allTextSentences); 
     });
     
     document.body.appendChild(shortButton);

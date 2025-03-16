@@ -8,8 +8,11 @@ export function SinglePost({ post, onBack }) {
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [processedContent, setProcessedContent] = useState('');
   const [totalSentences, setTotalSentences] = useState(0);
+  const [allTextSentences, setAllTextSentences] = useState([]);
   const contentRef = useRef(null);
   
+
+  console.log(allTextSentences, 'allTextSentences')
   // Process HTML content on component mount
   useEffect(() => {
     if (!post || !post.selftext_html) return;
@@ -35,6 +38,7 @@ export function SinglePost({ post, onBack }) {
     tempDiv.innerHTML = decodedHtml;
     
     let sentenceCount = 0;
+    setAllTextSentences([]);
     
     // Process each paragraph and wrap sentences while preserving HTML
     Array.from(tempDiv.querySelectorAll('p')).forEach((p, pIndex) => {
@@ -78,6 +82,7 @@ export function SinglePost({ post, onBack }) {
       const sentenceMatches = fullText.match(/[^.!?]+[.!?]+/g) || [fullText];
       
       sentenceMatches.forEach((sentence, index) => {
+        setAllTextSentences(allTextSentences => [...allTextSentences, ` ${sentence}`]);
         if (!sentence.trim()) return;
         
         let sentenceHtml = sentence;
@@ -100,7 +105,6 @@ export function SinglePost({ post, onBack }) {
             sentenceHtml = `${before}<${tag}${attrs}>${content}</${tag}>${after}`;
           }
         });
-        
         processedHtml += `<span class="sentence" data-index="${sentenceCount}">${sentenceHtml}</span>`;
         sentenceCount++;
         lastEnd = endPos;
@@ -189,7 +193,7 @@ export function SinglePost({ post, onBack }) {
         totalSentences={totalSentences}
       />
 
-      <KokoroPlayer textToStream={post.selftext}/>
+      <KokoroPlayer allTextSentences={allTextSentences} setCurrentIndex={setCurrentIndex}/>
     </div>
   );
 }

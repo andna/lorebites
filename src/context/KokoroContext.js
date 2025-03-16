@@ -18,6 +18,9 @@ export function KokoroProvider({ children }) {
   const isStreamingRef = useRef(false);
   const playbackPromiseRef = useRef(null);
   
+  // Add playback rate state
+  const [playbackRate, setPlaybackRate] = useState(2.0);
+  
   // Initialize Kokoro
   useEffect(() => {
     async function initKokoro() {
@@ -167,6 +170,8 @@ export function KokoroProvider({ children }) {
         
         const source = audioContext.createBufferSource();
         source.buffer = audioBuffer;
+        source.playbackRate.value = playbackRate;
+        source.preservePitch = true;
         source.connect(audioContext.destination);
         
         // Store active source
@@ -254,6 +259,7 @@ export function KokoroProvider({ children }) {
       const { TextSplitterStream } = await import("https://cdn.jsdelivr.net/npm/kokoro-js/+esm");
       const splitter = new TextSplitterStream();
       
+      console.log(splitter, 'splitterrrr')
       const stream = kokoroTTS.stream(splitter, {
         voice: "am_onyx"
       });
@@ -368,7 +374,7 @@ export function KokoroProvider({ children }) {
   }
   
   // Stream only without playing audio
-  async function streamOnly(text) {
+  async function streamOnly(allTextSentences) {
     if (!kokoroTTS) {
       console.error("Kokoro TTS not initialized");
       return false;
@@ -391,6 +397,8 @@ export function KokoroProvider({ children }) {
       const { TextSplitterStream } = await import("https://cdn.jsdelivr.net/npm/kokoro-js/+esm");
       const splitter = new TextSplitterStream();
       
+      console.log(splitter, 'splitterrrr')
+
       const stream = kokoroTTS.stream(splitter, {
         voice: "am_onyx"
       });
@@ -427,10 +435,10 @@ export function KokoroProvider({ children }) {
       })();
       
       // Push tokens to stream
-      const tokens = text.match(/\s*\S+/g) || [text];
-      console.log(`STREAM ONLY: Pushing ${tokens.length} tokens to stream`);
+      //const tokens = text.match(/\s*\S+/g) || [text];
+      //console.log(`STREAM ONLY: Pushing ${tokens.length} tokens to stream`);
       
-      for (const token of tokens) {
+      for (const token of allTextSentences) {
         if (isStoppedRef.current) break;
         splitter.push(token);
         await new Promise(resolve => setTimeout(resolve, 20));
@@ -469,7 +477,9 @@ export function KokoroProvider({ children }) {
         isStreaming,
         getAudioChunksCount,
         getCurrentChunkIndex,
-        stopAllAudio
+        stopAllAudio,
+        playbackRate,
+        setPlaybackRate
       }}
     >
       {children}
