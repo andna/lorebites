@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { getReadingTime, getReadingTimeInSeconds } from '../utils/formatters';
+import { getReadingTime } from '../utils/formatters';
 import { AudioControls } from './AudioControls';
 import './SynthControls.css';
 
@@ -17,7 +17,7 @@ export function SynthControls({
   const currentIndexRef = useRef(currentIndex);
   const [isPlaying, setIsPlaying] = React.useState(false);
   const [elapsedSeconds, setElapsedSeconds] = React.useState(0);
-  const totalSeconds = getReadingTimeInSeconds(text);
+  const totalSeconds = getReadingTime(text, true);
 
   // Keep ref in sync with state
   useEffect(() => {
@@ -198,21 +198,21 @@ export function SynthControls({
     }
   };
   
-  // Handle slider input (while dragging)
-  const handleSliderInput = (e) => {
+  // Handle slider events (both during dragging and after release)
+  const handleSlider = (e, isFinal = false) => {
     const newIndex = parseInt(e.target.value);
-    // Update displayed progress time while dragging
+    
+    // Update displayed progress time in both cases
     const newElapsedSeconds = Math.floor((newIndex / totalSentences) * totalSeconds);
     setElapsedSeconds(newElapsedSeconds);
-  };
-  
-  // Handle slider change (after dragging)
-  const handleSliderChange = (e) => {
-    const newIndex = parseInt(e.target.value);
-    stopSpeech();
-    setIsPlaying(true);
-    isPlayingRef.current = true;
-    speakSentence(newIndex);
+    
+    // Only update audio playback position when slider change is finalized
+    if (isFinal) {
+      stopSpeech();
+      setIsPlaying(true);
+      isPlayingRef.current = true;
+      speakSentence(newIndex);
+    }
   };
 
   return (
@@ -224,9 +224,7 @@ export function SynthControls({
       totalTime={getReadingTime(text)}
       currentIndex={currentIndex}
       totalChunks={totalSentences}
-      onSliderChange={handleSliderChange}
-      onSliderInput={handleSliderInput}
-      className="synth-controls"
+      onSliderEvent={handleSlider}
     />
   );
 } 

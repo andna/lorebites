@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { formatRelativeTime } from '../utils/formatters';
 import { SynthControls } from './SynthControls';
 import { KokoroPlayer } from './KokoroPlayer';
@@ -178,13 +178,13 @@ export function SinglePost({ post, onBack }) {
       <div 
         className="post-content" 
         ref={contentRef}
-        dangerouslySetInnerHTML={{ __html: processedContent }}
+        dangerouslySetInnerHTML={{ __html: processedContentMemo }}
       />
       
       <SynthControls
         text={post.selftext}
         contentRef={contentRef}
-        currentIndex={currentIndex >= 0 ? currentIndex : 0}
+        currentIndex={Math.max(currentIndex, 0)}
         setCurrentIndex={setCurrentIndex}
         totalSentences={totalSentences}
       />

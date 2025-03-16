@@ -9,12 +9,10 @@ export function AudioControls({
   totalTime,
   currentIndex,
   totalChunks,
-  onSliderChange,
-  onSliderInput,
-  className = ''
+  onSliderEvent
 }) {
   return (
-    <div className={`audio-controls ${className}`}>
+    <div className={`audio-controls synth-controls`}>
       <div className="audio-controls-top">
         {!isPlaying ? (
           <button 
@@ -43,8 +41,8 @@ export function AudioControls({
         min={0}
         max={totalChunks > 0 ? totalChunks - 1 : 0}
         value={currentIndex}
-        onChange={onSliderChange}
-        onInput={onSliderInput}
+        onChange={(e) => onSliderEvent(e, true)}
+        onInput={(e) => onSliderEvent(e, false)}
         aria-label="Progress slider"
       />
     </div>
