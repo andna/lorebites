@@ -178,7 +178,7 @@ export function SinglePost({ post, onBack }) {
       <div 
         className="post-content" 
         ref={contentRef}
-        dangerouslySetInnerHTML={{ __html: processedContentMemo }}
+        dangerouslySetInnerHTML={{ __html:  processedContent }}
       />
       
       <SynthControls
@@ -189,7 +189,7 @@ export function SinglePost({ post, onBack }) {
         totalSentences={totalSentences}
       />
 
-      <KokoroPlayer />
+      <KokoroPlayer textToStream={post.selftext}/>
     </div>
   );
 }
