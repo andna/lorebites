@@ -199,20 +199,16 @@ export function SynthControls({
   };
   
   // Handle slider events (both during dragging and after release)
-  const handleSlider = (e, isFinal = false) => {
-    const newIndex = parseInt(e.target.value);
+  const handleSlider = (newIndex) => {
     
     // Update displayed progress time in both cases
     const newElapsedSeconds = Math.floor((newIndex / totalSentences) * totalSeconds);
     setElapsedSeconds(newElapsedSeconds);
     
-    // Only update audio playback position when slider change is finalized
-    if (isFinal) {
-      stopSpeech();
-      setIsPlaying(true);
-      isPlayingRef.current = true;
-      speakSentence(newIndex);
-    }
+    stopSpeech();
+    setIsPlaying(true);
+    isPlayingRef.current = true;
+    speakSentence(newIndex);
   };
 
   return (

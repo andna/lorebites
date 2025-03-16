@@ -41,8 +41,7 @@ export function AudioControls({
         min={0}
         max={totalChunks > 0 ? totalChunks - 1 : 0}
         value={currentIndex}
-        onChange={(e) => onSliderEvent(e, true)}
-        onInput={(e) => onSliderEvent(e, false)}
+        onChange={(e) => onSliderEvent(e.target.value)}
         aria-label="Progress slider"
       />
     </div>

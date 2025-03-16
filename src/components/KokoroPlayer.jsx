@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useKokoro } from '../context/KokoroContext';
 import './KokoroPlayer.css';
+import { AudioControls } from './AudioControls';
 
 export function KokoroPlayer({ textToStream }) {
   const { 
@@ -23,7 +24,6 @@ export function KokoroPlayer({ textToStream }) {
   const [playbackState, setPlaybackState] = useState('stopped'); // 'playing', 'paused', 'stopped'
   const [progressText, setProgressText] = useState('No audio available');
   const [isLoading, setIsLoading] = useState(false);
-
   // Update playback state and progress text regularly
   useEffect(() => {
     const updateState = () => {
@@ -88,9 +88,15 @@ export function KokoroPlayer({ textToStream }) {
     
     await playFromIndex(0);
   };
-  
+
+
+  const onSliderEvent = (newIndex) => {
+    setResumeIndex(newIndex);
+    handleResumeTTS(newIndex);
+  }
+
   // Handle Resume From button click
-  const handleResumeTTS = async () => {
+  const handleResumeTTS = async (indexToResume) => {
     const chunksCount = getAudioChunksCount();
     if (chunksCount === 0) {
       alert('No audio chunks available. Stream the audio first.');
@@ -104,7 +110,7 @@ export function KokoroPlayer({ textToStream }) {
     await new Promise(resolve => setTimeout(resolve, 50));
     
     // Make sure the index is valid
-    const index = Math.min(resumeIndex, chunksCount - 1);
+    const index = Math.min(indexToResume, chunksCount - 1);
     console.log(`Starting playback from chunk ${index} of ${chunksCount}`);
     
     await playFromIndex(index);
@@ -206,7 +212,7 @@ export function KokoroPlayer({ textToStream }) {
           <div className="resume-controls">
             <button 
               className="tts-button"
-              onClick={handleResumeTTS}
+              onClick={() => {handleResumeTTS(resumeIndex)}}
               disabled={resumeIndex >= getAudioChunksCount()}
             >
               Resume From
@@ -237,6 +243,19 @@ export function KokoroPlayer({ textToStream }) {
           <div className="progress-info">
             {progressText}
           </div>
+          <AudioControls
+            isPlaying={isPlaying()}
+            onPlay={handlePlayPause}
+            onPause={togglePlayPause}
+            currentTime={getCurrentChunkIndex()}
+            totalTime={getAudioChunksCount()}
+            currentIndex={resumeIndex}
+            totalChunks={getAudioChunksCount()}
+            onSliderEvent={onSliderEvent}
+          />
+
+
+
         </>
       )}
     </div>
