@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useKokoro } from '../context/KokoroContext';
 import './KokoroPlayer.css';
 
-export function KokoroPlayer() {
+export function KokoroPlayer({allSentences}) {
   const { 
     generateAndPlayAudio,
     streamAndPlayAudio,
@@ -24,20 +24,7 @@ export function KokoroPlayer() {
   const [progressText, setProgressText] = useState('No audio available');
   const [isLoading, setIsLoading] = useState(false);
   
-  const sampleText = `I sprinted through the cornfield, the stalks clawing at me like fingers. Behind me, I could hear them—smell the acrid burn of their torches.
 
-The mob.
-
-I clutched my child to my chest, the only thing she had left in the world. I, her mother, her protector.
-
-Grief had already tried to pull me below, and for a time, I drowned in madness beneath the ruins of my life. The fever had stolen my whole kin, leaving just me and my babe.
-
-They wanted to take her from me. From her own mother. They thought I wasn't fit to care for her. I couldn't let them. I pressed the small body, wrapped in a potato sack, close to my heart.
-
-Crows burst from the stalks, black ink splattered against the gray sky. My lungs burned, my legs screamed in protest.
-
-To my left, something tore through the corn, snapping stalks as it came. The dogs. Wicked beasts with teeth like rake tines, sniffing out my trail, eager to rip flesh from bone. They hadn't reached me yet, but they would.`;
-  
   // Update playback state and progress text regularly
   useEffect(() => {
     const updateState = () => {
@@ -82,7 +69,7 @@ To my left, something tore through the corn, snapping stalks as it came. The dog
     stopAllAudio();
     
     setIsLoading(true);
-    await streamOnly(sampleText);
+    await streamOnly(allSentences);
     // State will be updated by the effect
   };
   
@@ -181,7 +168,7 @@ To my left, something tore through the corn, snapping stalks as it came. The dog
     testButton.addEventListener('click', () => {
       // Stop any existing audio first
       stopAllAudio();
-      streamAndPlayAudio(sampleText);
+        streamAndPlayAudio(allSentences);
     });
     
     document.body.appendChild(shortButton);
