@@ -40,6 +40,12 @@ export function SubredditList({ onSelectSubreddit }) {
       "desc": "Following orders exactly, with amusing or dramatic results.",
       "emoji": "📌😏"
     },
+    {
+      "sub": "PettyRevenge",
+      "subs": 4,
+      "desc": "",
+      "emoji": ""
+    },
     // {
     //   "sub": "ProRevenge",
     //   "subs": 2,
