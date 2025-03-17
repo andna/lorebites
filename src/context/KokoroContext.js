@@ -21,12 +21,16 @@ export function KokoroProvider({ children }) {
   // Add playback rate state
   const [playbackRate, setPlaybackRate] = useState(1.0);
 
+  // Ref to track if initialization has already occurred
+  const hasInitializedRef = useRef(false);
+
   // Initialize Kokoro
   useEffect(() => {
     async function initKokoro() {
-      if (kokoroTTS || isInitializing) return;
+      if (kokoroTTS || isInitializing || hasInitializedRef.current) return;
 
       setIsInitializing(true);
+      hasInitializedRef.current = true; // Set the ref to true to prevent re-initialization
       try {
         console.log("Starting Kokoro initialization...");
         const model_id = "onnx-community/Kokoro-82M-v1.0-ONNX";
@@ -49,7 +53,7 @@ export function KokoroProvider({ children }) {
     }
 
     initKokoro();
-  }, []);
+  }, [kokoroTTS, isInitializing]); // Ensure dependencies are correct
 
   // Initialize audio context
   const getAudioContext = () => {
