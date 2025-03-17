@@ -1,54 +1,88 @@
-.subreddit-grid {
+.s-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
-  padding: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(12rem, 1fr));
+  gap: 1rem;
+  padding: 1rem 0;
+  max-width: 40rem;
+  margin: 0 auto;
 }
 
-.card {
-  background-color: var(--card-bg, #fff);
-  border-radius: 8px;
-  padding: 16px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+.s-grid .card {
   cursor: pointer;
-  transition: transform 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+.s-grid .card:hover{
+  transform: translateY(-2px);
 }
 
-.card:hover {
-  transform: translateY(-4px);
+.s-title,
+.s-desc{
+  position: relative;
+  z-index: 1;
 }
-
-.subreddit-title {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.subreddit-title h2 {
+.s-title{
   margin: 0;
-  font-size: 1.2rem;
 }
 
-.subreddit-title small {
-  opacity: 0.7;
-  font-weight: normal;
+.s-title small {
+  margin-right: 0.2rem;
+  font-size: 70%;
+  opacity: 0.5;
+  font-weight: 300;
 }
 
-.sub-subtitle {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+
+
+.s-members,
+.s-desc{
+  opacity: 0.5;
 }
 
-.subreddit-desc {
-  margin: 0;
-  font-size: 0.9rem;
-  color: var(--text-secondary, #555);
+.s-desc, .s-emoji{
+  transition: 0.5s;
 }
 
-/* Dark mode support */
-:root.dark .card {
-  --card-bg: #222;
-  --text-secondary: #aaa;
-} 
+
+.s-desc{
+  min-height: 2rem;
+}
+
+.s-grid .card:hover .s-desc{
+  opacity: 1;
+}
+
+
+.s-emoji {
+  position: absolute;
+  opacity: 0.5;
+
+  filter: sepia(0.1) hue-rotate(-15deg) grayscale(0.7);
+  font-size: 20vw;
+  letter-spacing: -1rem;
+  right: 0;
+  bottom: 0;
+}
+
+
+.s-grid .card:hover  .s-emoji {
+  filter: sepia(0) hue-rotate(0deg) grayscale(0);
+  font-size: 20vw;
+  letter-spacing: -2rem;
+  right: 2rem;
+  bottom: -2rem;
+}
+
+.s-emoji:after{
+  content: ' ';
+  background: linear-gradient(90deg, #27282d, rgb(39 40 44 / 65%), transparent);
+  width: 115%;
+  height: 100%;
+  position: absolute;
+  right: -1rem;
+}
+
+.s-members{
+  font-family: monospace;
+  letter-spacing: 0.1rem;
+}

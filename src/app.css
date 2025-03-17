@@ -1,0 +1,92 @@
+:root {
+
+    --padding: 1rem;
+    --padding-half: 0.5rem;
+    --border-r: 1rem;
+}
+:root.dark {
+    --bg: #4C4E60;
+    --text-color: #ffffff;
+    --text-bg: #27282E;
+    --shadow:  0 2px 4px rgba(0, 0, 0, 0.1);
+    --header-bg: linear-gradient(to right, #005fa3, #004a80);
+    --button-hover-bg: rgba(255, 255, 255, 0.2);
+
+    --menu-bg: #1a1a1a;
+    --menu-border: #333333;
+    --menu-hover: #2a2a2a;
+    --menu-text: #ffffff;
+    --menu-close: #aaaaaa;
+}
+
+body{
+    background: var(--bg);
+    color: var(--text-color);
+    font-family: system-ui;
+    font-size: 0.875rem;
+    font-weight: 300;
+    margin: 0;
+}
+
+.app-container{
+    padding: 5rem 1rem 1rem;
+}
+.app-container:after{
+
+    background: var(--bg);
+    content: ' ';
+    position: fixed;
+    width: calc(100% + 2rem);
+    height: 2rem;
+    left: -1rem;
+    top: 0;
+    z-index: 1;
+}
+
+.card{
+    background-color: var(--text-bg);
+    border-radius: var(--border-r);
+    box-shadow: var(--shadow);
+    padding: var(--padding);
+}
+
+header.card{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--padding-half);
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    width: calc(100% - 3rem);
+    z-index: 10;
+}
+
+button {
+    background: none;
+    min-width: 3rem;
+    min-height: 3rem;
+    border-radius: 50%;
+    box-shadow: var(--shadow);
+    border: none;
+    cursor: pointer;
+    color: var(--text-color)
+}
+
+
+button:hover {
+    background: var(--button-hover-bg);
+
+}
+
+
+.action-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3rem 1rem 1rem;
+    background-color: #5c5f7c;
+    top: -2rem;
+    position: relative;
+    border-radius: 0 0 1rem 1rem;
+}

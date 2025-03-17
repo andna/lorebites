@@ -2,16 +2,16 @@ import React, { useState, useEffect, useRef } from 'react';
 import { formatRelativeTime, getReadingTime } from '../utils/formatters';
 import './PostsList.css';
 
-export function PostsList({ subreddit, onSelectPost, onBack }) {
+export function PostsList({ subreddit, onSelectPost }) {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [timeRange, setTimeRange] = useState('day');
   const [sort] = useState('top'); // Default sort is 'top'
-  
+
   // Add a ref to track if we've already fetched for this subreddit+sort+timeRange
   const fetchedRef = useRef({});
-  
+
   // Function to get storage key for caching
   const getStorageKey = (subreddit, sort, timeRange) => {
     return `reddit_posts_${subreddit.sub}_${sort}_${timeRange}`.toLowerCase();
@@ -21,17 +21,17 @@ export function PostsList({ subreddit, onSelectPost, onBack }) {
   const getCachedPosts = (subreddit, sort, timeRange) => {
     const key = getStorageKey(subreddit, sort, timeRange);
     const cached = localStorage.getItem(key);
-    
+
     if (!cached) return null;
-    
+
     const { posts, timestamp } = JSON.parse(cached);
     const isExpired = Date.now() - timestamp > (60000 * 30); // 30 minutes in milliseconds
-    
+
     if (isExpired) {
       localStorage.removeItem(key);
       return null;
     }
-    
+
     return posts;
   };
 
@@ -48,22 +48,22 @@ export function PostsList({ subreddit, onSelectPost, onBack }) {
   // Load posts when subreddit, sort, or timeRange changes
   useEffect(() => {
     if (!subreddit) return;
-    
+
     // Create a unique key for this fetch request
     const fetchKey = `${subreddit.sub}_${sort}_${timeRange}`;
-    
+
     // Check if we've already fetched this combination in this component lifecycle
     if (fetchedRef.current[fetchKey]) {
       console.log('Already fetched this combination, skipping');
       return;
     }
-    
+
     // Mark this combination as fetched
     fetchedRef.current[fetchKey] = true;
-    
+
     setLoading(true);
     setError(null);
-    
+
     // Check cache first
     const cachedPosts = getCachedPosts(subreddit, sort, timeRange);
     if (cachedPosts) {
@@ -74,7 +74,7 @@ export function PostsList({ subreddit, onSelectPost, onBack }) {
     }
 
     console.log(`Fetching from Reddit: r/${subreddit.sub}/${sort}.json?t=${timeRange}`);
-    
+
     // Fetch from Reddit API
     fetch(`https://www.reddit.com/r/${subreddit.sub}/${sort}.json?limit=10&t=${timeRange}`)
       .then(response => {
@@ -84,6 +84,8 @@ export function PostsList({ subreddit, onSelectPost, onBack }) {
         return response.json();
       })
       .then(data => {
+
+        console.log('refffff', data)
         // Reddit returns data in a nested structure
         const posts = data.data.children.map(child => child.data);
         cachePosts(subreddit, sort, timeRange, posts);
@@ -95,7 +97,7 @@ export function PostsList({ subreddit, onSelectPost, onBack }) {
         setError('Failed to load posts. Please try again.');
         setLoading(false);
       });
-      
+
   }, [subreddit, sort, timeRange]); // Only re-run when these values change
 
   // Handle time range change
@@ -114,11 +116,12 @@ export function PostsList({ subreddit, onSelectPost, onBack }) {
   return (
     <div className="posts-container">
       <div className="action-header">
+        <i><small>Approx. {subreddit.subs}M<br />suscribers.</small></i>
         <div className="sort-controls">
           Sorting Top
-          <select 
-            id="timeRangeSelect" 
-            value={timeRange} 
+          <select
+            id="timeRangeSelect"
+            value={timeRange}
             onChange={handleTimeRangeChange}
           >
             <option value="hour">Past Hour</option>
@@ -129,7 +132,6 @@ export function PostsList({ subreddit, onSelectPost, onBack }) {
             <option value="all">All Time</option>
           </select>
         </div>
-        <button onClick={handleRandomPost}>Random</button>
       </div>
 
       <div className="posts-list">
@@ -139,8 +141,8 @@ export function PostsList({ subreddit, onSelectPost, onBack }) {
           <div className="error">{error}</div>
         ) : (
           posts.map(post => (
-            <div 
-              key={post.id} 
+            <div
+              key={post.id}
               className="card"
               onClick={() => onSelectPost(post)}
             >

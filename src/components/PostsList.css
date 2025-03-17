@@ -4,14 +4,6 @@
   height: 100%;
 }
 
-.action-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 12px 16px;
-  background-color: var(--header-bg, #f5f5f5);
-  border-bottom: 1px solid var(--border-color, #ddd);
-}
 
 .sort-controls {
   display: flex;
@@ -27,18 +19,6 @@
   color: var(--text-color, #333);
 }
 
-.action-header button {
-  padding: 6px 12px;
-  background-color: var(--button-bg, #4a6fa5);
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.action-header button:hover {
-  background-color: var(--button-hover, #3a5f95);
-}
 
 .posts-list {
   flex: 1;
@@ -46,19 +26,6 @@
   padding: 16px;
 }
 
-.card {
-  background-color: var(--card-bg, #fff);
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 16px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-  transition: transform 0.2s ease;
-}
-
-.card:hover {
-  transform: translateY(-2px);
-}
 
 .post-title {
   margin-top: 0;
@@ -83,19 +50,8 @@
   color: #d32f2f;
 }
 
-/* Dark mode support */
-:root.dark .action-header {
-  --header-bg: #1a1a1a;
-  --border-color: #333;
-}
-
 :root.dark .sort-controls select {
   --bg-color: #222;
   --text-color: #eee;
   --border-color: #444;
 }
-
-:root.dark .card {
-  --card-bg: #222;
-  --text-secondary: #aaa;
-} 
