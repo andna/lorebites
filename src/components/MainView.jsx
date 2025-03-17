@@ -1,61 +1,109 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useParams, useNavigate, Navigate } from 'react-router-dom';
 import { SubredditList } from './SubredditList';
 import { PostsList } from './PostsList';
 import { SinglePost } from './SinglePost';
 import { Menu } from './Menu';
 import './MainView.css';
 
+// The main router component
 export function MainView() {
-  const [view, setView] = useState('subreddits'); // 'subreddits', 'posts', 'post'
+  const [darkMode, setDarkMode] = useState(false);
+  
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<MainContent darkMode={darkMode} setDarkMode={setDarkMode} />} />
+        <Route path="/r/:subredditName" element={<MainContent darkMode={darkMode} setDarkMode={setDarkMode} />} />
+        <Route path="/r/:subredditName/comments/:postId/:commentId" element={<MainContent darkMode={darkMode} setDarkMode={setDarkMode} />} />
+      </Routes>
+    </Router>
+  );
+}
+
+// The actual content component
+function MainContent({ darkMode, setDarkMode }) {
+  const navigate = useNavigate();
+  const params = useParams();
+  const { subredditName, postId } = params;
+  
+  const [menuOpen, setMenuOpen] = useState(false);
   const [currentSubreddit, setCurrentSubreddit] = useState(null);
   const [currentPost, setCurrentPost] = useState(null);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
-
+  
+  // Determine current view based on URL params
+  const view = postId ? 'post' : subredditName ? 'posts' : 'subreddits';
+  
+  // Update state when URL params change
+  useEffect(() => {
+    if (subredditName && !currentSubreddit) {
+      // Set currentSubreddit based on URL param
+      setCurrentSubreddit({ sub: subredditName });
+    }
+    
+    if (postId && subredditName && !currentPost) {
+      // In a real app, you might fetch the post data here based on postId
+      setCurrentPost({ id: postId, title: `Post ${postId}` });
+    }
+  }, [subredditName, postId, currentSubreddit, currentPost]);
+  
   const isSubredditsView = view === 'subreddits';
   const isPostsListView = view === 'posts';
   const isSinglePostsView = view === 'post';
-
+  
+  const handleBackButton = () => {
+    if (isSinglePostsView) {
+      navigate(`/r/${subredditName}`);
+    } else if (isPostsListView) {
+      navigate('/');
+    }
+  };
+  
   return (
     <div className={`app-container ${isPostsListView ? "is-posts-list" : ""}`}>
       <header id="mainHeader" className="card">
-        {!isSubredditsView ? <button className="back-button"
-                                 onClick={() => {
-                                   if (isSinglePostsView) setView('posts');
-                                   else setView('subreddits');
-                                 }}>
-          &lt;
-        </button> : <div className="logo">
-          Logo
-        </div>}
+        {!isSubredditsView ? (
+          <button className="back-button" onClick={handleBackButton}>
+            &lt;
+          </button>
+        ) : (
+          <div className="logo">Logo</div>
+        )}
 
         <div className="title">
-          {isSubredditsView ? 'Pick a genre' :
-           isPostsListView ? currentSubreddit?.sub :
-           currentPost?.title || ''}
+          {isSubredditsView 
+            ? 'Pick a genre' 
+            : isPostsListView 
+              ? currentSubreddit?.sub 
+              : currentPost?.title || ''}
         </div>
         <button className="menu-button" onClick={() => setMenuOpen(true)}>☰</button>
       </header>
+      
       <Menu
         isOpen={menuOpen}
         onClose={() => setMenuOpen(false)}
         darkMode={darkMode}
         setDarkMode={setDarkMode}
       />
+      
       <main>
         {isSubredditsView && (
-          <SubredditList onSelectSubreddit={(sub) => {
-            setCurrentSubreddit(sub);
-            setView('posts');
-          }} />
+          <SubredditList 
+            onSelectSubreddit={(sub) => {
+              setCurrentSubreddit(sub);
+              navigate(`/r/${sub.sub.toLowerCase()}`);
+            }} 
+          />
         )}
 
         {isPostsListView && currentSubreddit && (
           <PostsList
             subreddit={currentSubreddit}
             onSelectPost={(post) => {
+              console.log('refffp', post)
               setCurrentPost(post);
-              setView('post');
+              navigate(`comments/${post.url.split("/comments/")?.[1]}`);
             }}
           />
         )}
