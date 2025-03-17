@@ -234,7 +234,7 @@ To my left, something tore through the corn, snapping stalks as it came. The dog
   const isSinglePostsView = view === 'post';
 
   return (
-    <div className="app-container">
+    <div className={`app-container ${isPostsListView ? "is-posts-list" : ""}`}>
       <header id="mainHeader" className="card">
         {!isSubredditsView ? <button className="back-button"
                                  onClick={() => {
