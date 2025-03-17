@@ -84,6 +84,8 @@ export function SynthControls({
     
     // Create and configure utterance
     const utterance = new SpeechSynthesisUtterance(currentSentence.textContent);
+    const voices = window.speechSynthesis.getVoices();
+    utterance.voice = voices.find(a => a.name === "Google US English") || voices.find(a => a.name === "Moira");
     utteranceRef.current = utterance;
     
     // Start progress timer

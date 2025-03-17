@@ -193,7 +193,7 @@ export function SinglePost({ post, onBack }) {
         totalSentences={totalSentences}
       />
 
-      <KokoroPlayer allTextSentences={allTextSentences} setCurrentIndex={setCurrentIndex}/>
+     {/* <KokoroPlayer allTextSentences={allTextSentences} setCurrentIndex={setCurrentIndex}/> */}
     </div>
   );
 }

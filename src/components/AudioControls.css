@@ -1,8 +1,7 @@
 .audio-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  width: 100%;
+  position: fixed;
+  bottom: 1rem;
+  width: calc(100% - 4rem);
 }
 
 .audio-controls-top {

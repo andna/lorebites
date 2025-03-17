@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { MainView } from './components/MainView';
-import { KokoroProvider } from './context/KokoroContext';
+//import { KokoroProvider } from './context/KokoroContext';
 import './app.css';
 
 function App() {
@@ -18,9 +18,7 @@ function App() {
   }, []);
 
   return (
-    <KokoroProvider>
-      <MainView darkMode={darkMode} setDarkMode={setDarkMode} />
-    </KokoroProvider>
+    <MainView darkMode={darkMode} setDarkMode={setDarkMode} />
   );
 }
 

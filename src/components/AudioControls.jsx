@@ -12,7 +12,7 @@ export function AudioControls({
   onSliderEvent
 }) {
   return (
-    <div className={`audio-controls synth-controls`}>
+    <div className={`audio-controls card`}>
       <div className="audio-controls-top">
         {!isPlaying ? (
           <button 
