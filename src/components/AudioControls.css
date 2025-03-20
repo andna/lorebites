@@ -4,10 +4,16 @@
   width: calc(100% - 4rem);
 }
 
-.audio-controls-top {
+
+.audio-controls-top,
+.audio-controls-top-left {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.audio-controls-top{
+  justify-content: space-between;
 }
 
 .play-button,

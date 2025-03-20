@@ -18,11 +18,32 @@ export function SynthControls({
   const [isPlaying, setIsPlaying] = React.useState(false);
   const [elapsedSeconds, setElapsedSeconds] = React.useState(0);
   const totalSeconds = getReadingTime(text, true);
+  
+  // Use both state and ref for speech speed
+  const [speechSpeed, setSpeechSpeed] = React.useState(1.0);
+  const speechSpeedRef = useRef(1.0);
 
-  // Keep ref in sync with state
+  // Keep refs in sync with state
   useEffect(() => {
     currentIndexRef.current = currentIndex;
   }, [currentIndex]);
+  
+  useEffect(() => {
+    speechSpeedRef.current = speechSpeed;
+    
+    // If currently playing, restart with new speed
+    if (isPlayingRef.current && window.speechSynthesis.speaking) {
+      const currentPos = currentIndexRef.current;
+      stopSpeech();
+      
+      // Small delay to ensure clean stop before restarting
+      setTimeout(() => {
+        if (isPlayingRef.current) {
+          speakSentence(currentPos);
+        }
+      }, 50);
+    }
+  }, [speechSpeed]);
 
   // Format time for display
   const formatTime = (seconds) => {
@@ -48,7 +69,7 @@ export function SynthControls({
     
     // Clear any highlighting
     if (contentRef.current) {
-      const highlights = contentRef.current.querySelectorAll('.reading');
+      const highlights = contentRef.current?.querySelectorAll('.reading');
       highlights.forEach(el => el.classList.remove('reading'));
     }
     
@@ -74,7 +95,7 @@ export function SynthControls({
     setCurrentIndex(index);
     
     // Get the sentence
-    const sentenceElements = contentRef.current.querySelectorAll('.sentence');
+    const sentenceElements = contentRef.current?.querySelectorAll('.sentence');
     const currentSentence = sentenceElements[index];
     
     if (!currentSentence) {
@@ -85,7 +106,13 @@ export function SynthControls({
     // Create and configure utterance
     const utterance = new SpeechSynthesisUtterance(currentSentence.textContent);
     const voices = window.speechSynthesis.getVoices();
-    utterance.voice = voices.find(a => a.name === "Google US English") || voices.find(a => a.name === "Moira");
+    const voice = voices.find(a => a.name === "Moira");
+    const betterVoice = voices.find(a => a.name === "Google US English");
+    
+    // Use the current speed from ref to ensure latest value
+    const currentSpeed = speechSpeedRef.current;
+    utterance.voice = (currentSpeed <= 1 && betterVoice) ? betterVoice : voice;
+    utterance.rate = currentSpeed;
     utteranceRef.current = utterance;
     
     // Start progress timer
@@ -213,6 +240,13 @@ export function SynthControls({
     speakSentence(newIndex);
   };
 
+  const handleSpeedChange = (newSpeed) => {
+    if (!isNaN(newSpeed) && newSpeed > 0) {
+      setSpeechSpeed(newSpeed);
+      // No need to restart here, the useEffect will handle it
+    }
+  };
+
   return (
     <AudioControls
       isPlaying={isPlaying}
@@ -223,6 +257,9 @@ export function SynthControls({
       currentIndex={currentIndex}
       totalChunks={totalSentences}
       onSliderEvent={handleSlider}
+      speechSpeed={speechSpeed}
+      handleSpeedChange={handleSpeedChange}
     />
+    
   );
 } 
