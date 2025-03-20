@@ -4,7 +4,10 @@ import { SynthControls } from './SynthControls';
 import { KokoroPlayer } from './KokoroPlayer';
 import './SinglePost.css';
 
-export function SinglePost({ post, onBack }) {
+export function SinglePost({ post: propPost }) {
+  const [post, setPost] = useState(propPost);
+  const [loading, setLoading] = useState(!propPost);
+  const [error, setError] = useState(null);
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [processedContent, setProcessedContent] = useState('');
   const [totalSentences, setTotalSentences] = useState(0);
@@ -154,6 +157,86 @@ export function SinglePost({ post, onBack }) {
     return () => clearTimeout(timer);
   }, [currentIndex]);
   
+  // Fetch post data if not provided as prop
+  useEffect(() => {
+    console.log('fffs', propPost,  window.location.pathname)
+    // If we already have the post data from props, no need to fetch
+    if (propPost && propPost.selftext) {
+      setPost(propPost);
+      return;
+    }
+
+    // Parse URL directly for more reliability on page refresh
+    const pathname = window.location.pathname;
+    
+    // Check if URL matches the expected pattern for a Reddit post
+    // Example: /r/shortscarystories/comments/1jd4ude/shadow
+    const postPathRegex = /\/r\/([^\/]+)\/comments\/([^\/]+)/;
+    const match = pathname.match(postPathRegex);
+    
+    if (match) {
+      const subredditName = match[1];
+      const postId = match[2];
+      
+      setLoading(true);
+      setError(null);
+
+      // Construct the Reddit API URL - we can use the full path directly
+      // This handles cases with or without the post title at the end
+      const redditApiUrl = `https://www.reddit.com${pathname}.json`;
+      
+      console.log(`Fetching post data from: ${redditApiUrl}`);
+      
+      fetch(redditApiUrl)
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`Failed to fetch post (${response.status})`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          // Reddit returns an array with [post, comments]
+          if (data && data.length > 0 && data[0].data.children.length > 0) {
+            // Extract post data
+            const fetchedPost = data[0].data.children[0].data;
+            
+            // Add comments data if needed
+            if (data.length > 1) {
+              fetchedPost.comments = data[1].data.children
+                .filter(child => child.kind !== 'more')
+                .map(child => child.data);
+            }
+            
+            setPost(fetchedPost);
+            console.log("Post data retrieved successfully:", fetchedPost);
+          } else {
+            throw new Error('Post data structure not as expected');
+          }
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error('Error loading post:', err);
+          setError(`Failed to load post: ${err.message}`);
+          setLoading(false);
+        });
+    } else {
+      setError('Invalid post URL format');
+      setLoading(false);
+    }
+  }, [propPost]);
+
+  if (loading) {
+    return <div className="loading">Loading post...</div>;
+  }
+
+  if (error) {
+    return <div className="error">{error}</div>;
+  }
+
+  if (!post) {
+    return <div className="error">Post not found</div>;
+  }
+
   return (
     <div className="post-view">
       <div className="action-header">
