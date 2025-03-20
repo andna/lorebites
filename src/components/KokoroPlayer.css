@@ -6,6 +6,7 @@
   padding: 10px;
   border-top: 1px solid var(--border-color, #ddd);
   background-color: var(--bg-primary, #f9f9f9);
+  flex-direction: column;
 }
 
 .loading-indicator,

@@ -15,7 +15,6 @@ export function SinglePost({ post: propPost }) {
   const contentRef = useRef(null);
   
 
-  console.log(allTextSentences, 'allTextSentences')
   // Process HTML content on component mount
   useEffect(() => {
     if (!post || !post.selftext_html) return;
@@ -276,7 +275,10 @@ export function SinglePost({ post: propPost }) {
         totalSentences={totalSentences}
       />
 
-     {/* <KokoroPlayer allTextSentences={allTextSentences} setCurrentIndex={setCurrentIndex}/> */}
+      <KokoroPlayer allTextSentences={allTextSentences} setCurrentIndex={e => {
+        //console.log('setCurrentIndex', e)
+        //setCurrentIndex(currentIndex)
+      }}/>
     </div>
   );
 }

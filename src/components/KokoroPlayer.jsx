@@ -5,8 +5,6 @@ import { AudioControls } from './AudioControls';
 
 export function KokoroPlayer({ allTextSentences, setCurrentIndex }) {
   const { 
-    generateAndPlayAudio,
-    streamAndPlayAudio,
     streamOnly,
     playFromIndex, 
     getAudioChunksCount, 
@@ -130,61 +128,6 @@ export function KokoroPlayer({ allTextSentences, setCurrentIndex }) {
       alert('No audio chunks available. Stream the audio first.');
     }
   };
-  
-  // Add floating buttons for quick testing
-  useEffect(() => {
-    if (isInitializing || error) return;
-    
-    // Create test buttons
-    const shortButton = document.createElement('button');
-    shortButton.textContent = "Quick TTS";
-    shortButton.className = "tts-short-button";
-    Object.assign(shortButton.style, {
-      position: 'fixed',
-      bottom: '20px',
-      right: '150px',
-      padding: '10px 15px',
-      background: '#28a745',
-      color: 'white',
-      border: 'none',
-      borderRadius: '5px',
-      cursor: 'pointer'
-    });
-    shortButton.addEventListener('click', () => {
-      // Stop any existing audio first
-      stopAllAudio();
-      const shortText = "For this example, let's pretend we're consuming text from an LLM, one word at a time.";
-      generateAndPlayAudio(shortText);
-    });
-    
-    const testButton = document.createElement('button');
-    testButton.textContent = "Test TTS";
-    testButton.className = "tts-test-button";
-    Object.assign(testButton.style, {
-      position: 'fixed',
-      bottom: '20px',
-      right: '20px',
-      padding: '10px 15px',
-      background: '#4a6fa5',
-      color: 'white',
-      border: 'none',
-      borderRadius: '5px',
-      cursor: 'pointer'
-    });
-    testButton.addEventListener('click', () => {
-      // Stop any existing audio first
-      stopAllAudio();
-      streamAndPlayAudio(allTextSentences); 
-    });
-    
-    document.body.appendChild(shortButton);
-    document.body.appendChild(testButton);
-    
-    return () => {
-      document.body.removeChild(shortButton);
-      document.body.removeChild(testButton);
-    };
-  }, [isInitializing, error, generateAndPlayAudio, streamAndPlayAudio, stopAllAudio]);
 
   return (
     <div className="kokoro-player">
@@ -201,14 +144,7 @@ export function KokoroPlayer({ allTextSentences, setCurrentIndex }) {
           >
             {isLoading ? 'Streaming...' : 'Stream TTS'}
           </button>
-          
-          <button 
-            className="tts-button"
-            onClick={handlePlay}
-            disabled={isLoading || playbackState === 'playing' || getAudioChunksCount() === 0}
-          >
-            Play All
-          </button>
+        
           
           <div className="resume-controls">
             <button 
@@ -240,10 +176,10 @@ export function KokoroPlayer({ allTextSentences, setCurrentIndex }) {
           >
             {playbackState === 'playing' ? '⏸️ Pause' : '▶️ Play'}
           </button>
-          
           <div className="progress-info">
             {progressText}
           </div>
+          {/*
           <AudioControls
             isPlaying={isPlaying()}
             onPlay={handlePlayPause}
@@ -254,6 +190,7 @@ export function KokoroPlayer({ allTextSentences, setCurrentIndex }) {
             totalChunks={getAudioChunksCount()}
             onSliderEvent={onSliderEvent}
           />
+          */}
 
 
 
