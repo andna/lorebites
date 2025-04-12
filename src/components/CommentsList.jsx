@@ -7,6 +7,74 @@ export function CommentsList({ post }) {
   const [error, setError] = useState(null);
   const fetchedPostIds = useRef(new Set());
 
+  // Function to get storage key for caching
+  const getStorageKey = (postId) => {
+    return `reddit_comments_${postId}`.toLowerCase();
+  };
+
+  // Function to get cached comments
+  const getCachedComments = (postId) => {
+    const key = getStorageKey(postId);
+    const cached = localStorage.getItem(key);
+
+    if (!cached) return null;
+
+    try {
+      const { comments, timestamp } = JSON.parse(cached);
+      const isExpired = Date.now() - timestamp > (60000 * 30); // 30 minutes in milliseconds
+
+      if (isExpired) {
+        console.log(`Cached comments for post ${postId} expired, removing from cache`);
+        localStorage.removeItem(key);
+        return null;
+      }
+
+      console.log(`Using cached comments for post ${postId}, cache age: ${Math.round((Date.now() - timestamp) / 60000)} minutes`);
+      return comments;
+    } catch (err) {
+      console.error('Error parsing cached comments:', err);
+      localStorage.removeItem(key);
+      return null;
+    }
+  };
+
+  // Function to cache comments
+  const cacheComments = (postId, comments) => {
+    if (!postId) return;
+    
+    const key = getStorageKey(postId);
+    const data = {
+      comments,
+      timestamp: Date.now()
+    };
+    
+    try {
+      localStorage.setItem(key, JSON.stringify(data));
+      console.log(`Comments for post ${postId} cached successfully`);
+    } catch (err) {
+      console.error('Error caching comments:', err);
+      // In case of quota exceeded or other errors, try to clear old caches
+      try {
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key.startsWith('reddit_comments_')) {
+            keysToRemove.push(key);
+          }
+        }
+        
+        // Remove oldest caches first (keep newest 10)
+        if (keysToRemove.length > 10) {
+          const itemsToRemove = keysToRemove.slice(0, keysToRemove.length - 10);
+          itemsToRemove.forEach(key => localStorage.removeItem(key));
+          console.log(`Removed ${itemsToRemove.length} old comment caches`);
+        }
+      } catch (e) {
+        console.error('Error cleaning up cache:', e);
+      }
+    }
+  };
+
   useEffect(() => {
     if (!post) {
       setLoading(false);
@@ -18,6 +86,11 @@ export function CommentsList({ post }) {
       console.log("Using existing comments from post data");
       setComments(post.comments);
       setLoading(false);
+      
+      // Cache these comments for future visits
+      if (post.id) {
+        cacheComments(post.id, post.comments);
+      }
       return;
     }
 
@@ -27,9 +100,18 @@ export function CommentsList({ post }) {
       return;
     }
 
-    // Skip if we've already fetched for this post
+    // Skip if we've already fetched for this post in this session
     if (fetchedPostIds.current.has(post.id)) {
-      console.log(`Already fetched comments for post ${post.id}, skipping`);
+      console.log(`Already fetched comments for post ${post.id} in this session, skipping`);
+      return;
+    }
+
+    // Check cache first
+    const cachedComments = getCachedComments(post.id);
+    if (cachedComments) {
+      setComments(cachedComments);
+      setLoading(false);
+      fetchedPostIds.current.add(post.id);
       return;
     }
 
@@ -61,6 +143,9 @@ export function CommentsList({ post }) {
             .map(child => child.data);
           
           setComments(commentData);
+          
+          // Cache the comments
+          cacheComments(post.id, commentData);
         } else {
           setComments([]);
         }

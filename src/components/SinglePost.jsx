@@ -5,6 +5,74 @@ import { KokoroPlayer } from './KokoroPlayer';
 import { CommentsList } from './CommentsList';
 import './SinglePost.css';
 
+// Function to get storage key for caching post data
+const getPostStorageKey = (subredditName, postId) => {
+  return `reddit_post_${subredditName}_${postId}`.toLowerCase();
+};
+
+// Function to get cached post data
+const getCachedPost = (subredditName, postId) => {
+  const key = getPostStorageKey(subredditName, postId);
+  const cached = localStorage.getItem(key);
+
+  if (!cached) return null;
+
+  try {
+    const { post, timestamp } = JSON.parse(cached);
+    const isExpired = Date.now() - timestamp > (60000 * 30); // 30 minutes in milliseconds
+
+    if (isExpired) {
+      console.log(`Cached post data expired, removing from cache`);
+      localStorage.removeItem(key);
+      return null;
+    }
+
+    console.log(`Using cached post data, cache age: ${Math.round((Date.now() - timestamp) / 60000)} minutes`);
+    return post;
+  } catch (err) {
+    console.error('Error parsing cached post data:', err);
+    localStorage.removeItem(key);
+    return null;
+  }
+};
+
+// Function to cache post data
+const cachePost = (subredditName, postId, post) => {
+  if (!subredditName || !postId) return;
+  
+  const key = getPostStorageKey(subredditName, postId);
+  const data = {
+    post,
+    timestamp: Date.now()
+  };
+  
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+    console.log(`Post data cached successfully`);
+  } catch (err) {
+    console.error('Error caching post data:', err);
+    // Clean up older caches if needed
+    try {
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.startsWith('reddit_post_')) {
+          keysToRemove.push(key);
+        }
+      }
+      
+      // Remove oldest caches first (keep newest 10)
+      if (keysToRemove.length > 10) {
+        const itemsToRemove = keysToRemove.slice(0, keysToRemove.length - 10);
+        itemsToRemove.forEach(key => localStorage.removeItem(key));
+        console.log(`Removed ${itemsToRemove.length} old post caches`);
+      }
+    } catch (e) {
+      console.error('Error cleaning up cache:', e);
+    }
+  }
+};
+
 export function SinglePost({ post: propPost }) {
   const [post, setPost] = useState(propPost);
   const [loading, setLoading] = useState(!propPost);
@@ -168,7 +236,7 @@ export function SinglePost({ post: propPost }) {
   
   // Fetch post data if not provided as prop
   useEffect(() => {
-    console.log('fffs', propPost,  window.location.pathname)
+    console.log('fffs', propPost, window.location.pathname)
     // If we already have the post data from props, no need to fetch
     if (propPost && propPost.selftext) {
       setPost(propPost);
@@ -179,7 +247,6 @@ export function SinglePost({ post: propPost }) {
     const pathname = window.location.pathname;
     
     // Check if URL matches the expected pattern for a Reddit post
-    // Example: /r/shortscarystories/comments/1jd4ude/shadow
     const postPathRegex = /\/r\/([^\/]+)\/comments\/([^\/]+)/;
     const match = pathname.match(postPathRegex);
     
@@ -190,8 +257,15 @@ export function SinglePost({ post: propPost }) {
       setLoading(true);
       setError(null);
 
-      // Construct the Reddit API URL - we can use the full path directly
-      // This handles cases with or without the post title at the end
+      // Check if we have a valid cache first
+      const cachedPost = getCachedPost(subredditName, postId);
+      if (cachedPost) {
+        setPost(cachedPost);
+        setLoading(false);
+        return;
+      }
+
+      // Construct the Reddit API URL
       const redditApiUrl = `https://www.reddit.com${pathname}.json`;
       
       console.log(`Fetching post data from: ${redditApiUrl}`);
@@ -216,8 +290,11 @@ export function SinglePost({ post: propPost }) {
                 .map(child => child.data);
             }
             
+            // Cache the post data
+            cachePost(subredditName, postId, fetchedPost);
+            
             setPost(fetchedPost);
-            console.log("Post data retrieved successfully:", fetchedPost);
+            console.log("Post data retrieved successfully");
           } else {
             throw new Error('Post data structure not as expected');
           }
