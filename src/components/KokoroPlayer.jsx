@@ -3,7 +3,7 @@ import { useKokoro } from '../context/KokoroContext';
 import './KokoroPlayer.css';
 import { AudioControls } from './AudioControls';
 
-export function KokoroPlayer({ allTextSentences, setCurrentIndex }) {
+export function KokoroPlayer({ allTextSentences, currentIndex, setCurrentIndex }) {
   const { 
     streamOnly,
     playFromIndex, 
@@ -37,7 +37,9 @@ export function KokoroPlayer({ allTextSentences, setCurrentIndex }) {
       // Update progress text
       const total = getAudioChunksCount();
       const current = getCurrentChunkIndex();
-      setCurrentIndex(current);
+      if (currentIndex !== current) { 
+        setCurrentIndex(current);
+      }
       
       if (total === 0) {
         setProgressText('No audio available');

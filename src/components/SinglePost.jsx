@@ -122,6 +122,7 @@ export function SinglePost({ post: propPost }) {
     
   }, [post]);
   
+  console.log('reff-allsentences', allTextSentences)
   // Highlight the current sentence whenever currentIndex changes
   useEffect(() => {
     if (!contentRef.current) return;
@@ -276,9 +277,9 @@ export function SinglePost({ post: propPost }) {
         totalSentences={totalSentences}
       />
 
-      <KokoroPlayer allTextSentences={allTextSentences} setCurrentIndex={e => {
-        //console.log('setCurrentIndex', e)
-        //setCurrentIndex(currentIndex)
+      <KokoroPlayer allTextSentences={allTextSentences} currentIndex={currentIndex} setCurrentIndex={e => {
+        console.log('setCurrentIndex', e)
+        setCurrentIndex(e)
       }}/>
 
       <CommentsList post={post} />
