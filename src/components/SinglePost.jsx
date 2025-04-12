@@ -85,7 +85,15 @@ export function SinglePost({ post: propPost }) {
       const sentenceMatches = fullText.match(/[^.!?]+[.!?]+/g) || [fullText];
       
       sentenceMatches.forEach((sentence, index) => {
-        setAllTextSentences(allTextSentences => [...allTextSentences, ` ${sentence}`]);
+        const capitalizeFirstLetter = (str) => {
+          // Find the first letter using regex
+          return str.replace(/^([^a-zA-Z]*)([a-zA-Z])/, (match, nonLetters, firstLetter) => {
+            return nonLetters + firstLetter.toUpperCase();
+          });
+        };
+
+        // Add leading space and capitalize the first letter
+        setAllTextSentences(allTextSentences => [...allTextSentences, ` ${capitalizeFirstLetter(sentence)}`]);
         if (!sentence.trim()) return;
         
         let sentenceHtml = sentence;
