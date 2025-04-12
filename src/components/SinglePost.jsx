@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { formatRelativeTime } from '../utils/formatters';
 import { SynthControls } from './SynthControls';
 import { KokoroPlayer } from './KokoroPlayer';
+import { CommentsList } from './CommentsList';
 import './SinglePost.css';
 
 export function SinglePost({ post: propPost }) {
@@ -279,6 +280,8 @@ export function SinglePost({ post: propPost }) {
         //console.log('setCurrentIndex', e)
         //setCurrentIndex(currentIndex)
       }}/>
+
+      <CommentsList post={post} />
     </div>
   );
 }
