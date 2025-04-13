@@ -362,10 +362,12 @@ export function SinglePost({ post: propPost }) {
         totalSentences={totalSentences}
       />
 
+{/*
       <KokoroPlayer allTextSentences={allTextSentences} currentIndex={currentIndex} setCurrentIndex={e => {
         console.log('setCurrentIndex', e)
         setCurrentIndex(e)
       }}/>
+*/}
 
       <CommentsList post={post} />
     </div>

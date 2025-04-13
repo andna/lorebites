@@ -4,11 +4,15 @@ import { SubredditList } from './SubredditList';
 import { PostsList } from './PostsList';
 import { SinglePost } from './SinglePost';
 import { Menu } from './Menu';
+import { DevTester } from './DevTester';
 import './MainView.css';
 
 // The main router component
 export function MainView() {
   const [darkMode, setDarkMode] = useState(false);
+  
+  // Check if we're in development mode
+  const isDev = true//process.env.NODE_ENV === 'development';
   
   return (
     <Router>
@@ -16,6 +20,11 @@ export function MainView() {
         <Route path="/" element={<MainContent darkMode={darkMode} setDarkMode={setDarkMode} />} />
         <Route path="/r/:subredditName" element={<MainContent darkMode={darkMode} setDarkMode={setDarkMode} />} />
         <Route path="/r/:subredditName/comments/:postId/:commentId" element={<MainContent darkMode={darkMode} setDarkMode={setDarkMode} />} />
+        
+        {/* Dev-only route */}
+        {isDev && (
+          <Route path="/dev" element={<DevTester />} />
+        )}
       </Routes>
     </Router>
   );
