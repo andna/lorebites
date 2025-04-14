@@ -1,10 +1,10 @@
+// server.js
 const express = require('express');
 const cors = require('cors');
-const OpenAI = require('openai'); // Updated import
+const OpenAI = require('openai'); // Ensure this is the correct import
 const app = express();
 const port = 3002;
 
-// Initialize OpenAI with the current SDK pattern
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -20,34 +20,64 @@ app.post('/api/summarize', async (req, res) => {
       return res.status(400).json({ error: 'Text is required' });
     }
 
-    console.log('Received text to summarize:', text.substring(0, 100) + '...');
+
+    const prompt = `**ROLE & GOAL**
+    You’re a *voice‑conscious fiction line‑editor*. Shrink the story below to **220‑280 words** and give the final count in parentheses.
     
-    // Call OpenAI API with current SDK pattern
+    **PRESERVE**
+    1. **Voice & Attitude** – slang, humor, rhythm; don’t formalize.  
+    2. **Sensory & Emotional Hooks** – vivid sights, sounds, smells, body feels, running jokes.  
+    3. **Cinematic Pacing** – keep paragraph breaks & one‑line beats; merge only when tension isn’t lost.  
+    4. **Plot Beats** – every turn survives.  
+    
+    **CUT**
+    • Redundant phrases, filler adverbs, over‑explained exposition.  
+    • Setting bits that don’t affect mood or stakes.  
+    • Duplicate sensory images (keep the strongest).  
+    
+    **STYLE**
+    • Max sentence 25 words; vary lengths.  
+    • Use em‑dashes or <br> cuts, never semicolons.  
+    • Grammar stays clean unless it kills voice.  
+    
+    **OUTPUT (HTML only)**
+    Return pure HTML, no markdown:  
+    • Preserve pacing with \<br>.  
+      – One \<br> for single‑line beats.  
+      – Two \<br>\<br> for blank‑line paragraph breaks.  
+    • After the story, add the word count on a new line.  
+    
+    Example:  
+    Story sentence…\<br>  
+    Dramatic beat.\<br>\<br>  
+    New paragraph starts…\<br>  
+    (Word count: 234)
+    
+    **INPUT**
+    \`\`\`
+    ${text}
+    \`\`\``;
+    
+    
+
     const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: "gpt-4o-mini-2024-07-18",
       messages: [
-        { role: "system", content: "You are a helpful assistant that summarizes text concisely." },
-        { role: "user", content: `Please provide a concise summary of the following text in 2-3 paragraphs:\n\n${text}` }
-      ],
+        { role: "system", content: "You are a helpful, precise assistant." },
+        { role: "user",   content: prompt }
+    ],
       max_tokens: 350,
       temperature: 0.7,
     });
 
-    // Extract summary from response
     const summary = completion.choices[0].message.content.trim();
-    console.log('Generated summary:', summary.substring(0, 100) + '...');
-    
     res.json({ summary });
   } catch (error) {
     console.error('OpenAI API Error:', error);
-    res.status(500).json({ 
-      error: 'Failed to generate summary', 
-      details: error.message 
-    });
+    res.status(500).json({ error: 'Failed to generate summary', details: error.message });
   }
 });
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
-  console.log(`OpenAI API Key configured: ${process.env.OPENAI_API_KEY ? 'Yes' : 'No'}`);
 });
