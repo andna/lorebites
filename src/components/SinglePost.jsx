@@ -3,6 +3,7 @@ import { formatRelativeTime } from '../utils/formatters';
 import { SynthControls } from './SynthControls';
 import { KokoroPlayer } from './KokoroPlayer';
 import { CommentsList } from './CommentsList';
+import { SummaryGenerator } from './SummaryGenerator';
 import './SinglePost.css';
 
 // Function to get storage key for caching post data
@@ -370,6 +371,9 @@ export function SinglePost({ post: propPost }) {
 */}
 
       <CommentsList post={post} />
+      
+      {/* Add the SummaryGenerator component after the comments */}
+      <SummaryGenerator sentences={allTextSentences} />
     </div>
   );
 }

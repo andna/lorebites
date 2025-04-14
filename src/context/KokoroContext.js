@@ -55,7 +55,7 @@ export function KokoroProvider({ children }) {
       }
     }
 
-    initKokoro();
+    //initKokoro();
   }, [kokoroTTS, isInitializing]); // Ensure dependencies are correct
 
   // Initialize audio context
