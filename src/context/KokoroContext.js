@@ -55,7 +55,7 @@ export function KokoroProvider({ children }) {
       }
     }
 
-    //initKokoro();
+    initKokoro();
   }, [kokoroTTS, isInitializing]); // Ensure dependencies are correct
 
   // Initialize audio context
@@ -421,7 +421,7 @@ export function KokoroProvider({ children }) {
       console.log(splitter, 'splitterrrr')
 
       const stream = kokoroTTS.stream(splitter, {
-        voice: "am_onyx"
+        voice: "af_nicole"
       });
 
       // Process stream without starting playback

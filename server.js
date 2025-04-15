@@ -20,15 +20,27 @@ app.post('/api/summarize', async (req, res) => {
       return res.status(400).json({ error: 'Text is required' });
     }
 
+    console.log('Received text to summarize:', text.substring(0, 100) + '...');
+    
+    const longCut = 220;
+    const tightCut = 140;
+    const microCut = 50;
 
     const prompt = `**ROLE & GOAL**
-    You’re a *voice‑conscious fiction line‑editor*. Shrink the story below to **220‑280 words** and give the final count in parentheses.
+    You’re a *voice‑conscious fiction line‑editor*. Create **three HTML versions** of the story:
+    
+    * **Long Cut:** ${longCut}‑${longCut + 50} words  
+    * **Tight Cut:** ${tightCut}‑${tightCut + 40} words  
+    * **Micro Cut:** ${microCut}‑${microCut + 30} words  
+    
+    List the exact word‑count after *each* version.
     
     **PRESERVE**
     1. **Voice & Attitude** – slang, humor, rhythm; don’t formalize.  
     2. **Sensory & Emotional Hooks** – vivid sights, sounds, smells, body feels, running jokes.  
     3. **Cinematic Pacing** – keep paragraph breaks & one‑line beats; merge only when tension isn’t lost.  
-    4. **Plot Beats** – every turn survives.  
+    4. **Key Plot Beats** – every turn survives.  
+    5. **Climax & Moral Resonance** – protect the emotional payoff or takeaway; make sure each cut lands with the same moral punch.
     
     **CUT**
     • Redundant phrases, filler adverbs, over‑explained exposition.  
@@ -37,26 +49,36 @@ app.post('/api/summarize', async (req, res) => {
     
     **STYLE**
     • Max sentence 25 words; vary lengths.  
-    • Use em‑dashes or <br> cuts, never semicolons.  
+    • Use em‑dashes or \<br> cuts, never semicolons.  
     • Grammar stays clean unless it kills voice.  
     
-    **OUTPUT (HTML only)**
-    Return pure HTML, no markdown:  
+    **OUTPUT (HTML only)**  
+    Return pure HTML—no markdown.  
     • Preserve pacing with \<br>.  
-      – One \<br> for single‑line beats.  
-      – Two \<br>\<br> for blank‑line paragraph breaks.  
-    • After the story, add the word count on a new line.  
+      – One \<br> for single‑line beats.  
+      – Two \<br>\<br> for blank‑line paragraph breaks.  
+    • After each version, add the word count on a new line.  
     
-    Example:  
-    Story sentence…\<br>  
+    Template:  
+    \<p><strong>Long Cut</strong></p>  
+    Story…\<br>  
     Dramatic beat.\<br>\<br>  
-    New paragraph starts…\<br>  
-    (Word count: 234)
+    Next paragraph…\<br>  
+    (Word count: 234)\<br>\<br>  
+    
+    \<p><strong>Tight Cut</strong></p>  
+    …\<br>  
+    (Word count: ###)\<br>\<br>  
+    
+    \<p><strong>Micro Cut</strong></p>  
+    …\<br>  
+    (Word count: ###)
     
     **INPUT**
     \`\`\`
     ${text}
     \`\`\``;
+    
     
     
 
@@ -66,12 +88,16 @@ app.post('/api/summarize', async (req, res) => {
         { role: "system", content: "You are a helpful, precise assistant." },
         { role: "user",   content: prompt }
     ],
-      max_tokens: 350,
-      temperature: 0.7,
+      max_tokens: 3000,
+      temperature: 0.8,
     });
 
     const summary = completion.choices[0].message.content.trim();
-    res.json({ summary });
+    const tokenUsage = completion.usage.total_tokens;
+
+    console.log('Generated summary:', summary.substring(0, 100) + '...');
+    
+    res.json({ summary, tokenUsage });
   } catch (error) {
     console.error('OpenAI API Error:', error);
     res.status(500).json({ error: 'Failed to generate summary', details: error.message });
@@ -80,4 +106,5 @@ app.post('/api/summarize', async (req, res) => {
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
+  console.log(`OpenAI API Key configured: ${process.env.OPENAI_API_KEY ? 'Yes' : 'No'}`);
 });

@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import './SummaryGenerator.css';
 
-export function SummaryGenerator({ sentences }) {
+export function SummaryGenerator({ selftext_html }) {
   const [summary, setSummary] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [expanded, setExpanded] = useState(false);
 
   const generateSummary = async () => {
-    if (!sentences || sentences.length === 0) {
+    if (!selftext_html) {
       setError('No content to summarize');
       return;
     }
@@ -17,10 +17,8 @@ export function SummaryGenerator({ sentences }) {
     setError(null);
 
     try {
-      // Combine all sentences into a single text
-      const fullText = sentences.join(' ');
       
-      console.log('Sending request to /api/summarize with text length:', fullText.length);
+      console.log('Sending request to /api/summarize with text length:', selftext_html.length);
       
       // Call your API endpoint
       const response = await fetch('http://localhost:3002/api/summarize', {
@@ -28,7 +26,7 @@ export function SummaryGenerator({ sentences }) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ text: fullText }),
+        body: JSON.stringify({ text: selftext_html }),
       });
 
       if (!response.ok) {
@@ -38,6 +36,7 @@ export function SummaryGenerator({ sentences }) {
 
       const data = await response.json();
       setSummary(data.summary);
+      console.log('Tokens used:', data.tokenUsage);
       setExpanded(true);
       console.log('Summary received and set');
     } catch (err) {
@@ -48,6 +47,7 @@ export function SummaryGenerator({ sentences }) {
     }
   };
 
+  
   return (
     <div className="summary-generator">
       <div className="summary-header">
@@ -78,7 +78,7 @@ export function SummaryGenerator({ sentences }) {
           
           {summary && (
             <div className="summary-text">
-              <p>{summary}</p>
+                <div dangerouslySetInnerHTML={{ __html: summary }} />   
               <button 
                 className="regenerate-button" 
                 onClick={generateSummary}

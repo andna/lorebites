@@ -363,17 +363,17 @@ export function SinglePost({ post: propPost }) {
         totalSentences={totalSentences}
       />
 
-{/*
+
       <KokoroPlayer allTextSentences={allTextSentences} currentIndex={currentIndex} setCurrentIndex={e => {
         console.log('setCurrentIndex', e)
         setCurrentIndex(e)
       }}/>
-*/}
+
 
       <CommentsList post={post} />
       
       {/* Add the SummaryGenerator component after the comments */}
-      <SummaryGenerator sentences={allTextSentences} />
+      <SummaryGenerator selftext_html={post.selftext_html} />
     </div>
   );
 }
