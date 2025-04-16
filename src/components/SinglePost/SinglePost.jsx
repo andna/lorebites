@@ -349,31 +349,32 @@ export function SinglePost({ post: propPost }) {
         </div>
       </div>
 
+
+      <SummaryGenerator selftext_html={post.selftext_html} />
+
+
       <div
         className="post-content"
         ref={contentRef}
         dangerouslySetInnerHTML={{ __html:  processedContent }}
       />
 
-      <SynthControls
-        text={post.selftext}
-        contentRef={contentRef}
-        currentIndex={Math.max(currentIndex, 0)}
-        setCurrentIndex={setCurrentIndex}
-        totalSentences={totalSentences}
-      />
 
+      <CommentsList post={post} />
 
       <KokoroPlayer allTextSentences={allTextSentences} currentIndex={currentIndex} setCurrentIndex={e => {
         console.log('setCurrentIndex', e)
         setCurrentIndex(e)
       }}/>
 
+      <SynthControls
+          text={post.selftext}
+          contentRef={contentRef}
+          currentIndex={Math.max(currentIndex, 0)}
+          setCurrentIndex={setCurrentIndex}
+          totalSentences={totalSentences}
+      />
 
-      <CommentsList post={post} />
-
-      {/* Add the SummaryGenerator component after the comments */}
-      <SummaryGenerator selftext_html={post.selftext_html} />
     </div>
   );
 }

@@ -5,7 +5,6 @@ export function SummaryGenerator({ selftext_html }) {
   const [summary, setSummary] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [expanded, setExpanded] = useState(false);
 
   const generateSummary = async () => {
     if (!selftext_html) {
@@ -17,9 +16,9 @@ export function SummaryGenerator({ selftext_html }) {
     setError(null);
 
     try {
-      
+
       console.log('Sending request to /api/summarize with text length:', selftext_html.length);
-      
+
       // Call your API endpoint
       const response = await fetch('http://localhost:3002/api/summarize', {
         method: 'POST',
@@ -37,7 +36,6 @@ export function SummaryGenerator({ selftext_html }) {
       const data = await response.json();
       setSummary(data.summary);
       console.log('Tokens used:', data.tokenUsage);
-      setExpanded(true);
       console.log('Summary received and set');
     } catch (err) {
       console.error('Error generating summary:', err);
@@ -47,49 +45,41 @@ export function SummaryGenerator({ selftext_html }) {
     }
   };
 
-  
+
   return (
     <div className="summary-generator">
-      <div className="summary-header">
-        <h3>Post Summary</h3>
-        <button 
-          className="toggle-button"
-          onClick={() => setExpanded(!expanded)}
-        >
-          {expanded ? '−' : '+'}
-        </button>
-      </div>
 
-      {expanded && (
-        <div className="summary-content">
-          {!summary && !loading && !error && (
-            <button 
-              className="generate-button" 
-              onClick={generateSummary}
-              disabled={loading}
+      <h3>Post Summary</h3>
+
+
+      <div className="summary-content">
+        {!summary && !loading && !error && (
+            <button
+                className="generate-button"
+                onClick={generateSummary}
+                disabled={loading}
             >
               Generate AI Summary
             </button>
-          )}
+        )}
 
-          {loading && <div className="loading">Generating summary...</div>}
-          
-          {error && <div className="error">{error}</div>}
-          
-          {summary && (
+        {loading && <div className="loading">Generating summary...</div>}
+
+        {error && <div className="error">{error}</div>}
+
+        {summary && (
             <div className="summary-text">
-                <div dangerouslySetInnerHTML={{ __html: summary }} />   
-              <button 
-                className="regenerate-button" 
-                onClick={generateSummary}
-                disabled={loading}
+              <div dangerouslySetInnerHTML={{ __html: summary }} />
+              <button
+                  className="regenerate-button"
+                  onClick={generateSummary}
+                  disabled={loading}
               >
                 Regenerate
               </button>
             </div>
-          )}
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
-} 
+}
