@@ -37,17 +37,6 @@ body{
     padding: 9rem 1rem 1rem;
 }
 
-.app-container:after{
-
-    background: var(--bg);
-    content: ' ';
-    position: fixed;
-    width: calc(100% + 2rem);
-    height: 2rem;
-    left: -1rem;
-    top: 0;
-    z-index: 1;
-}
 
 .card{
     background-color: var(--text-bg);
@@ -62,10 +51,11 @@ header.card{
     align-items: center;
     padding: var(--padding-half);
     position: fixed;
-    top: 1rem;
+    top: -1px;
     left: 1rem;
     width: calc(100% - 3rem);
     z-index: 10;
+    border-radius: 0 0 1rem 1rem;
 }
 
 button {

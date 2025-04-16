@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { formatRelativeTime, getReadingTime } from '../utils/formatters';
+import { formatRelativeTime, getReadingTime } from '../../utils/formatters';
 import './PostsList.css';
 
 export function PostsList({ subreddit, onSelectPost }) {
@@ -107,7 +107,7 @@ export function PostsList({ subreddit, onSelectPost }) {
   // Handle loading more posts
   const handleLoadMore = () => {
     if (!after || loadingMore) return;
-    
+
     setLoadingMore(true);
     setError(null);
 
@@ -126,7 +126,7 @@ export function PostsList({ subreddit, onSelectPost }) {
         setAfter(data.data.after); // Update the "after" value
         setPosts(prevPosts => [...prevPosts, ...newPosts]); // Append new posts
         setLoadingMore(false);
-        
+
         // Update cache with combined posts
         cachePosts(subreddit, sort, timeRange, [...posts, ...newPosts], data.data.after);
       })
@@ -196,10 +196,10 @@ export function PostsList({ subreddit, onSelectPost }) {
                 </div>
               </div>
             ))}
-            
+
             {after && (
               <div className="load-more-container">
-                <button 
+                <button
                   className="load-more-button"
                   onClick={handleLoadMore}
                   disabled={loadingMore}

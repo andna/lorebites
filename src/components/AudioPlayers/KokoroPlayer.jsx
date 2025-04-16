@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useKokoro } from '../context/KokoroContext';
+import { useKokoro } from '../../context/KokoroContext';
 import './KokoroPlayer.css';
 import { AudioControls } from './AudioControls';
 
 export function KokoroPlayer({ allTextSentences, currentIndex, setCurrentIndex }) {
-  const { 
+  const {
     streamOnly,
-    playFromIndex, 
-    getAudioChunksCount, 
+    playFromIndex,
+    getAudioChunksCount,
     stopAllAudio,
     isInitializing,
     error,
@@ -17,7 +17,7 @@ export function KokoroPlayer({ allTextSentences, currentIndex, setCurrentIndex }
     getCurrentChunkIndex,
     isStreaming,
   } = useKokoro();
-  
+
   const [resumeIndex, setResumeIndex] = useState(3);
   const [playbackState, setPlaybackState] = useState('stopped'); // 'playing', 'paused', 'stopped'
   const [progressText, setProgressText] = useState('No audio available');
@@ -33,14 +33,14 @@ export function KokoroPlayer({ allTextSentences, currentIndex, setCurrentIndex }
       } else {
         setPlaybackState('stopped');
       }
-      
+
       // Update progress text
       const total = getAudioChunksCount();
       const current = getCurrentChunkIndex();
-      if (currentIndex !== current) { 
+      if (currentIndex !== current) {
         setCurrentIndex(current);
       }
-      
+
       if (total === 0) {
         setProgressText('No audio available');
       } else if (isStreaming()) {
@@ -49,30 +49,30 @@ export function KokoroPlayer({ allTextSentences, currentIndex, setCurrentIndex }
         // Add 1 to indexes for display (1-based instead of 0-based)
         setProgressText(`Chunk ${current + 1} of ${total}`);
       }
-      
+
       // Set loading state based on streaming status
       setIsLoading(isStreaming());
     };
-    
+
     // Update immediately
     updateState();
-    
+
     // Set up interval to update regularly
     const interval = setInterval(updateState, 100);
-    
+
     return () => clearInterval(interval);
   }, [isPlaying, isPaused, isStreaming, getAudioChunksCount, getCurrentChunkIndex]);
-  
+
   // Handle Stream TTS button click
   const handleTestTTS = async () => {
     // Stop any existing audio first
     stopAllAudio();
-    
+
     setIsLoading(true);
-    await streamOnly(allTextSentences); 
+    await streamOnly(allTextSentences);
     // State will be updated by the effect
   };
-  
+
   // Handle Play button
   const handlePlay = async () => {
     if (getAudioChunksCount() === 0) {
@@ -80,13 +80,13 @@ export function KokoroPlayer({ allTextSentences, currentIndex, setCurrentIndex }
       alert('No audio chunks available. Stream the audio first.');
       return;
     }
-    
+
     // Ensure any existing audio is completely stopped
     stopAllAudio();
-    
+
     // Add a small delay to ensure audio context is properly reset
     await new Promise(resolve => setTimeout(resolve, 50));
-    
+
     await playFromIndex(0);
   };
 
@@ -103,20 +103,20 @@ export function KokoroPlayer({ allTextSentences, currentIndex, setCurrentIndex }
       alert('No audio chunks available. Stream the audio first.');
       return;
     }
-    
+
     // Ensure any existing audio is completely stopped before starting new playback
     stopAllAudio();
-    
+
     // Add a small delay to ensure audio context is properly reset
     await new Promise(resolve => setTimeout(resolve, 50));
-    
+
     // Make sure the index is valid
     const index = Math.min(indexToResume, chunksCount - 1);
     console.log(`Starting playback from chunk ${index} of ${chunksCount}`);
-    
+
     await playFromIndex(index);
   };
-  
+
   // Handle Play/Pause toggle
   const handlePlayPause = async () => {
     if (playbackState === 'playing') {
@@ -139,39 +139,39 @@ export function KokoroPlayer({ allTextSentences, currentIndex, setCurrentIndex }
         <div className="error-message">Error: {error}</div>
       ) : (
         <>
-          <button 
+          <button
             className="tts-button"
             onClick={handleTestTTS}
             disabled={isLoading || playbackState === 'playing'}
           >
             {isLoading ? 'Streaming...' : 'Stream TTS'}
           </button>
-        
-          
+
+
           <div className="resume-controls">
-            <button 
+            <button
               className="tts-button"
               onClick={() => {handleResumeTTS(resumeIndex)}}
               disabled={resumeIndex >= getAudioChunksCount()}
             >
               Resume From
             </button>
-            <input 
-              type="number" 
-              min="0" 
+            <input
+              type="number"
+              min="0"
               max={Math.max(0, getAudioChunksCount() - 1)}
-              value={resumeIndex} 
+              value={resumeIndex}
               onChange={(e) => {
                 const val = parseInt(e.target.value, 10) || 0;
                 const max = Math.max(0, getAudioChunksCount() - 1);
                 setResumeIndex(Math.min(val, max));
-              }} 
+              }}
               className="resume-index-input"
               disabled={playbackState === 'playing'}
             />
           </div>
-          
-          <button 
+
+          <button
             className={`tts-button play-pause-button ${playbackState}`}
             onClick={handlePlayPause}
             disabled={getAudioChunksCount() === 0 && playbackState === 'stopped'}
@@ -200,4 +200,4 @@ export function KokoroPlayer({ allTextSentences, currentIndex, setCurrentIndex }
       )}
     </div>
   );
-} 
+}

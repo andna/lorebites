@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { SinglePost } from './SinglePost';
+import { SinglePost } from './SinglePost/SinglePost';
 import './DevTester.css';
 
 export function DevTester() {
@@ -58,4 +58,4 @@ export function DevTester() {
       </div>
     </div>
   );
-} 
+}
