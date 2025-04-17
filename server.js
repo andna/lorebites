@@ -22,16 +22,14 @@ app.post('/api/summarize', async (req, res) => {
 
     console.log('Received text to summarize:', text.substring(0, 100) + '...');
     
-    const longCut = 220;
     const tightCut = 140;
-    const microCut = 50;
+    const microCut = 60;
 
     const prompt = `**ROLE & GOAL**
-    You’re a *voice‑conscious fiction line‑editor*. Create **three HTML versions** of the story:
+    You’re a *voice‑conscious fiction line‑editor*. Create **2 HTML versions** of the story:
     
-    * **Long Cut:** ${longCut}‑${longCut + 50} words  
-    * **Tight Cut:** ${tightCut}‑${tightCut + 40} words  
-    * **Micro Cut:** ${microCut}‑${microCut + 30} words  
+    * **Tight Cut:** ${tightCut}‑${tightCut + 20} words  
+    * **Micro Cut:** ${microCut}‑${microCut + 20} words  
     
     List the exact word‑count after *each* version.
     
@@ -60,15 +58,11 @@ app.post('/api/summarize', async (req, res) => {
     • After each version, add the word count on a new line.  
     
     Template:  
-    \<p><strong>Long Cut</strong></p>  
+    \<p><strong>Tight Cut</strong></p>  
     Story…\<br>  
     Dramatic beat.\<br>\<br>  
     Next paragraph…\<br>  
     (Word count: 234)\<br>\<br>  
-    
-    \<p><strong>Tight Cut</strong></p>  
-    …\<br>  
-    (Word count: ###)\<br>\<br>  
     
     \<p><strong>Micro Cut</strong></p>  
     …\<br>  
