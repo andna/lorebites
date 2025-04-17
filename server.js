@@ -104,14 +104,20 @@ app.get('/api/stream', (req, res) => {
       stream: true,
     })
     .on("content.delta", ({ delta, snapshot, parsed }) => {
-      // Send each delta (increment) with minimal content to show streaming
-      if (delta) {
-        res.write(`data: ${JSON.stringify({ content: delta })}\n\n`);
+      // Send the full parsed JSON object each time it updates
+      if (parsed) {
+        res.write(`data: ${JSON.stringify(parsed)}\n\n`);
+      } else if (delta) {
+        // Fallback if parsed isn't available
+        res.write(`data: ${JSON.stringify({ raw: delta })}\n\n`);
       }
     })
     .on("content.done", (props) => {
-      // Signal completion
-      res.write(`data: ${JSON.stringify({ content: "\n[DONE]" })}\n\n`);
+      // Send the final complete data
+      if (props && props.parsed) {
+        res.write(`data: ${JSON.stringify(props.parsed)}\n\n`);
+      }
+      res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
       res.end();
     });
 

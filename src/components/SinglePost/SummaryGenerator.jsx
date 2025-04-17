@@ -2,7 +2,10 @@ import React, { useState, useRef } from 'react';
 import './SummaryGenerator.css';
 
 export function SummaryGenerator({ selftext_html }) {
-  const [summary, setSummary] = useState('');
+  const [summaryData, setSummaryData] = useState({
+    tightCut: { content: '', wordCount: 0 },
+    microCut: { content: '', wordCount: 0 }
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const dataReceivedRef = useRef(false);
@@ -15,7 +18,10 @@ export function SummaryGenerator({ selftext_html }) {
 
     setLoading(true);
     setError(null);
-    setSummary('');
+    setSummaryData({
+      tightCut: { content: '', wordCount: 0 },
+      microCut: { content: '', wordCount: 0 }
+    });
     dataReceivedRef.current = false;
 
     const encodedText = encodeURIComponent(selftext_html);
@@ -23,19 +29,19 @@ export function SummaryGenerator({ selftext_html }) {
 
     eventSource.onmessage = (event) => {
       const data = JSON.parse(event.data);
+      dataReceivedRef.current = true;
+      
       if (data.error) {
         setError(data.error);
         eventSource.close();
-      } else if (data.content) {
-        dataReceivedRef.current = true;
-        
-        // Special handling for completion marker
-        if (data.content === "\n[DONE]") {
-          console.log('Stream completed successfully');
-        } else {
-          // Incrementally update with each token/delta
-          setSummary((prevSummary) => prevSummary + data.content);
-        }
+      } else if (data.done) {
+        console.log('Stream completed successfully');
+      } else if (data.raw) {
+        // Fallback for raw deltas if we receive them
+        console.log('Received raw delta:', data.raw);
+      } else {
+        // Handle structured JSON with tightCut and microCut
+        setSummaryData(data);
       }
     };
 
@@ -67,9 +73,9 @@ export function SummaryGenerator({ selftext_html }) {
 
   return (
     <div className="summary-generator">
-      <h3>Post Summary</h3>
+      <h3>Shortened Versions</h3>
       <div className="summary-content">
-        {!summary && !loading && !error && (
+        {!summaryData.tightCut?.content && !loading && !error && (
           <button
             className="generate-button"
             onClick={generateSummary}
@@ -80,19 +86,34 @@ export function SummaryGenerator({ selftext_html }) {
         )}
 
         {loading && <div className="loading">Generating summary...</div>}
-
         {error && <div className="error">{error}</div>}
-
-        {summary && (
-          <div className="summary-text">
-            <div dangerouslySetInnerHTML={{ __html: summary }} />
-            <button
-              className="regenerate-button"
-              onClick={generateSummary}
-              disabled={loading}
-            >
-              Regenerate
-            </button>
+        
+        {summaryData.tightCut?.content && (
+          <div className="summary-container">
+            <div className="summary-section">
+              <h3>Tight Cut ({summaryData.tightCut.wordCount} words)</h3>
+              <div className="summary-text">
+                {summaryData.tightCut.content}
+              </div>
+            </div>
+            
+            {summaryData.microCut?.content && (
+              <div className="summary-section">
+                <h3>Micro Cut ({summaryData.microCut.wordCount} words)</h3>
+                <div className="summary-text">
+                  {summaryData.microCut.content}
+                </div>
+              </div>
+            )}
+            <div className="button-container">
+              <button
+                className="regenerate-button"
+                onClick={generateSummary}
+                disabled={loading}
+              >
+                Regenerate
+              </button>
+            </div>
           </div>
         )}
       </div>
