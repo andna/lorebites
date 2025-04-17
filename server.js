@@ -36,8 +36,8 @@ app.post('/api/summarize', async (req, res) => {
 
     console.log('Received text to summarize:', text.substring(0, 100) + '...');
     
-    const tightCut = 140;
-    const microCut = 50;
+    const tightCut = 1; //140
+    const microCut = 2; //20
 
     const prompt = `**ROLE & GOAL**
     You're a *voice‑conscious fiction line‑editor*. Create **2 JSON versions** of the story:
@@ -79,35 +79,35 @@ app.post('/api/summarize', async (req, res) => {
     
     **INPUT**
     \`\`\`
-    ${text}
+    ${text.substring(0, 100)}
     \`\`\``;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini-2024-07-18",
-      messages: [
-        { role: "system", content: "You are a helpful, precise assistant." },
-        { role: "user",   content: prompt }
-      ],
-      max_tokens: 3000,
-      temperature: 0.8,
-      response_format: zodResponseFormat(SummarySchema, "summary"),
-    });
+    const stream = openai.beta.chat.completions
+      .stream({
+        model: "gpt-4o-mini-2024-07-18",
+        messages: [
+          { role: "system", content: "You are a helpful, precise assistant." },
+          { role: "user", content: prompt }
+        ],
+        response_format: zodResponseFormat(SummarySchema, "summary"),
+      })
+      .on("refusal.done", () => console.log("request refused"))
+      .on("content.delta", ({ snapshot, parsed }) => {
+        console.log("content:", snapshot);
+        console.log("parsed:", parsed);
+        console.log();
+      })
+      .on("content.done", (props) => {
+        console.log(props);
+      });
 
-    console.log('Raw API Response:', JSON.stringify(completion, null, 2));
+    await stream.done();
 
-    if (completion.error) {
-      console.error('API Error:', completion.error);
-    }
+    const finalCompletion = await stream.finalChatCompletion();
 
-    // Parse the JSON content from the response
-    const summaryContent = completion.choices[0].message.content;
-    const summary = JSON.parse(summaryContent);
+    console.log('Final Completion:', finalCompletion);
 
-    const tokenUsage = completion.usage.total_tokens;
-
-    console.log('Generated summary:', JSON.stringify(summary, null, 2));
-    
-    res.json({ summary, tokenUsage });
+    res.json({ summary: finalCompletion });
   } catch (error) {
     console.error('OpenAI API Error:', error);
     res.status(500).json({ error: 'Failed to generate summary', details: error.message });
