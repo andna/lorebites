@@ -3,6 +3,11 @@ import { KokoroTTS } from "https://cdn.jsdelivr.net/npm/kokoro-js/+esm";
 
 const KokoroContext = createContext(null);
 
+const voices = {
+  female: "af_bella",
+  male: "am_onyx"
+}
+
 export function KokoroProvider({ children }) {
   const [kokoroTTS, setKokoroTTS] = useState(null);
   const [isInitializing, setIsInitializing] = useState(false);
@@ -19,7 +24,7 @@ export function KokoroProvider({ children }) {
   const playbackPromiseRef = useRef(null);
 
   // Add playback rate state
-  const [playbackRate, setPlaybackRate] = useState(1.1);
+  const [playbackRate, setPlaybackRate] = useState(1.0);
 
   // Ref to track if initialization has already occurred
   const hasInitializedRef = useRef(false);
@@ -270,7 +275,7 @@ export function KokoroProvider({ children }) {
 
       console.log(splitter, 'splitterrrr')
       const stream = kokoroTTS.stream(splitter, {
-        voice: "af_nicole"
+        voice: voices.female
       });
 
       // Start playback in a separate promise that we can track
@@ -421,7 +426,8 @@ export function KokoroProvider({ children }) {
       console.log(splitter, 'splitterrrr')
 
       const stream = kokoroTTS.stream(splitter, {
-        voice: "af_nicole"
+        voice: voices.female,
+        speed: playbackRate
       });
 
       // Process stream without starting playback

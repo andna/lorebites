@@ -360,12 +360,13 @@ export function SinglePost({ post: propPost }) {
       />
 
 
-      <CommentsList post={post} />
-
-      <KokoroPlayer allTextSentences={allTextSentences} currentIndex={currentIndex} setCurrentIndex={e => {
+<KokoroPlayer allTextSentences={allTextSentences} currentIndex={currentIndex} setCurrentIndex={e => {
         console.log('setCurrentIndex', e)
         setCurrentIndex(e)
       }}/>
+}
+
+      <CommentsList post={post} />
 
       <SynthControls
           text={post.selftext}
