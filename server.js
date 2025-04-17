@@ -37,14 +37,14 @@ app.get('/api/stream', (req, res) => {
 
   console.log('Received text:', text);
 
-  const tightCut = 120;
-  const microCut = 60;
+  const biteCut = 60;
+  const shortCut = 120;
 
   const prompt = `**ROLE & GOAL**
   You're a *voice‑conscious fiction line‑editor*. Create **2 JSON versions** of the story:
   
-  * **Bite Cut:** ${microCut}‑${microCut + 30} words
-  * **Short Cut:** ${tightCut}‑${tightCut + 40} words  
+  * **Bite Cut:** ${biteCut}‑${biteCut + 30} words
+  * **Short Cut:** ${shortCut}‑${shortCut + 40} words  
   
   List the exact word‑count after *each* version.
   
@@ -74,11 +74,11 @@ app.get('/api/stream', (req, res) => {
   {
     "biteCut": {
       "content": "First sentence with tension.<br>Dramatic beat.<br><br>New paragraph with emotional hook...",
-      "wordCount": 60
+      "wordCount": ${biteCut}
     },
     "shortCut": {
       "content": "Longer version with more detail.<br>Dramatic pause.<br><br>Next paragraph...",
-      "wordCount": 120
+      "wordCount": ${shortCut}
     }
   }
   
@@ -106,6 +106,7 @@ app.get('/api/stream', (req, res) => {
       ],
       response_format: zodResponseFormat(SummarySchema, "summary"),
       temperature: 0.5,
+      frequency_penalty: 0.3,
       stream: true,
     })
     .on("content.delta", ({ delta, snapshot, parsed }) => {

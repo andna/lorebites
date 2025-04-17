@@ -1,10 +1,23 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import './SummaryGenerator.css';
+
+  // Function to count words in HTML content
+  const countWords = (htmlContent) => {
+    if (!htmlContent) return 0;
+    // Remove HTML tags and replace <br> with spaces
+    const plainText = htmlContent.replace(/<br\s*\/?>/gi, ' ').replace(/<\/?[^>]+(>|$)/g, '');
+    // Count words (split by whitespace and filter out empty strings)
+    return plainText.trim().split(/\s+/).filter(word => word.length > 0).length;
+  };
 
 export function SummaryGenerator({ selftext_html }) {
   const [summaryData, setSummaryData] = useState({
-    biteCut: { content: '', wordCount: 0 },
-    shortCut: { content: '', wordCount: 0 }
+    biteCut: { content: '' },
+    shortCut: { content: '' }
+  });
+  const [wordCounts, setWordCounts] = useState({
+    biteCut: 0,
+    shortCut: 0
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -19,8 +32,12 @@ export function SummaryGenerator({ selftext_html }) {
     setLoading(true);
     setError(null);
     setSummaryData({
-      biteCut: { content: '', wordCount: 0 },
-      shortCut: { content: '', wordCount: 0 }
+      biteCut: { content: '' },
+      shortCut: { content: '' }
+    });
+    setWordCounts({
+      biteCut: 0,
+      shortCut: 0
     });
     dataReceivedRef.current = false;
 
@@ -36,12 +53,19 @@ export function SummaryGenerator({ selftext_html }) {
         eventSource.close();
       } else if (data.done) {
         console.log('Stream completed successfully');
+        // Word counts will be calculated in useEffect
       } else if (data.raw) {
         // Fallback for raw deltas if we receive them
         console.log('Received raw delta:', data.raw);
       } else {
-        // Handle structured JSON with tightCut and microCut
+        // Handle structured JSON with biteCut and shortCut
         setSummaryData(data);
+        
+        // Calculate word counts from the received data
+        setWordCounts({
+          biteCut: countWords(data.biteCut?.content),
+          shortCut: countWords(data.shortCut?.content)
+        });
       }
     };
 
@@ -71,6 +95,7 @@ export function SummaryGenerator({ selftext_html }) {
     };
   };
 
+
   return (
     <div className="summary-generator">
       <h3>Shortened Versions</h3>
@@ -91,13 +116,13 @@ export function SummaryGenerator({ selftext_html }) {
         {summaryData.biteCut?.content && (
           <div className="summary-container">
             <div className="summary-section">
-              <h3>Bite Cut ({summaryData.biteCut.wordCount} words)</h3>
+              <h3>Bite Cut ({wordCounts.biteCut} words)</h3>
               <div className="summary-text" dangerouslySetInnerHTML={{ __html: summaryData.biteCut.content }}></div>
             </div>
             
             {summaryData.shortCut?.content && (
               <div className="summary-section">
-                <h3>Short Cut ({summaryData.shortCut.wordCount} words)</h3>
+                <h3>Short Cut ({wordCounts.shortCut} words)</h3>
                 <div className="summary-text" dangerouslySetInnerHTML={{ __html: summaryData.shortCut.content }}></div>
               </div>
             )}
