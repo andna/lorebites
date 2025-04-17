@@ -16,11 +16,11 @@ app.use(express.json());
 
 // Define the schema for the response
 const SummarySchema = z.object({
-  tightCut: z.object({
+  biteCut: z.object({
     content: z.string(),
     wordCount: z.number(),
   }),
-  microCut: z.object({
+  shortCut: z.object({
     content: z.string(),
     wordCount: z.number(),
   }),
@@ -37,14 +37,14 @@ app.get('/api/stream', (req, res) => {
 
   console.log('Received text:', text);
 
-  const tightCut = 1; //120
-  const microCut = 2; //50
+  const tightCut = 140;
+  const microCut = 80;
 
   const prompt = `**ROLE & GOAL**
   You're a *voice‑conscious fiction line‑editor*. Create **2 JSON versions** of the story:
   
-  * **Tight Cut:** ${tightCut}‑${tightCut + 40} words  
-  * **Micro Cut:** ${microCut}‑${microCut + 30} words  
+  * **Bite Cut:** ${microCut}‑${microCut + 30} words
+  * **Short Cut:** ${tightCut}‑${tightCut + 40} words  
   
   List the exact word‑count after *each* version.
   
@@ -68,13 +68,13 @@ app.get('/api/stream', (req, res) => {
   **OUTPUT (JSON only)**  
   Return pure JSON with the following structure:
   {
-    "tightCut": {
-      "content": "Tight cut content here...",
-      "wordCount": 150
-    },
-    "microCut": {
-      "content": "Micro cut content here...",
+    "biteCut": {
+      "content": "Bite cut content here...",
       "wordCount": 60
+    },
+    "shortCut": {
+      "content": "Short cut content here...",
+      "wordCount": 150
     }
   }
   

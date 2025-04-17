@@ -3,8 +3,8 @@ import './SummaryGenerator.css';
 
 export function SummaryGenerator({ selftext_html }) {
   const [summaryData, setSummaryData] = useState({
-    tightCut: { content: '', wordCount: 0 },
-    microCut: { content: '', wordCount: 0 }
+    biteCut: { content: '', wordCount: 0 },
+    shortCut: { content: '', wordCount: 0 }
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -19,8 +19,8 @@ export function SummaryGenerator({ selftext_html }) {
     setLoading(true);
     setError(null);
     setSummaryData({
-      tightCut: { content: '', wordCount: 0 },
-      microCut: { content: '', wordCount: 0 }
+      biteCut: { content: '', wordCount: 0 },
+      shortCut: { content: '', wordCount: 0 }
     });
     dataReceivedRef.current = false;
 
@@ -75,7 +75,7 @@ export function SummaryGenerator({ selftext_html }) {
     <div className="summary-generator">
       <h3>Shortened Versions</h3>
       <div className="summary-content">
-        {!summaryData.tightCut?.content && !loading && !error && (
+        {!summaryData.biteCut?.content && !loading && !error && (
           <button
             className="generate-button"
             onClick={generateSummary}
@@ -88,20 +88,20 @@ export function SummaryGenerator({ selftext_html }) {
         {loading && <div className="loading">Generating summary...</div>}
         {error && <div className="error">{error}</div>}
         
-        {summaryData.tightCut?.content && (
+        {summaryData.biteCut?.content && (
           <div className="summary-container">
             <div className="summary-section">
-              <h3>Tight Cut ({summaryData.tightCut.wordCount} words)</h3>
+              <h3>Bite Cut ({summaryData.biteCut.wordCount} words)</h3>
               <div className="summary-text">
-                {summaryData.tightCut.content}
+                {summaryData.biteCut.content}
               </div>
             </div>
             
-            {summaryData.microCut?.content && (
+            {summaryData.shortCut?.content && (
               <div className="summary-section">
-                <h3>Micro Cut ({summaryData.microCut.wordCount} words)</h3>
+                <h3>Short Cut ({summaryData.shortCut.wordCount} words)</h3>
                 <div className="summary-text">
-                  {summaryData.microCut.content}
+                  {summaryData.shortCut.content}
                 </div>
               </div>
             )}
