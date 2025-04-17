@@ -69,7 +69,7 @@ export function SummaryGenerator({ selftext_html }) {
 
         {summary && (
             <div className="summary-text">
-              <div dangerouslySetInnerHTML={{ __html: summary }} />
+              <div dangerouslySetInnerHTML={{ __html: JSON.stringify(summary) }} />
               <button
                   className="regenerate-button"
                   onClick={generateSummary}
