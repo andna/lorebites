@@ -366,46 +366,43 @@ export function SinglePost({ post: propPost }) {
 
       {/* Fixed bottom tab container */}
       <div className="fixed-bottom-tabs">
+
+        <div className="tab-content">
+          {activeTab === 'player' && (
+              <KokoroPlayer
+                  allTextSentences={allTextSentences}
+                  currentIndex={currentIndex}
+                  setCurrentIndex={e => {
+                    console.log('setCurrentIndex', e)
+                    setCurrentIndex(e)
+                  }}
+              />
+          )}
+
+          {activeTab === 'controls' && (
+              <SynthControls
+                  text={post.selftext}
+                  contentRef={contentRef}
+                  currentIndex={Math.max(currentIndex, 0)}
+                  setCurrentIndex={setCurrentIndex}
+                  totalSentences={totalSentences}
+              />
+          )}
+        </div>
+
         <div className="tab-buttons">
-          <button 
-            className={activeTab === 'controls' ? 'active' : ''}
-            onClick={() => setActiveTab('controls')}
+          <button
+              className={activeTab === 'controls' ? 'active' : ''}
+              onClick={() => setActiveTab('controls')}
           >
             Synth
           </button>
-          <button 
-            className={activeTab === 'player' ? 'active' : ''}
-            onClick={() => setActiveTab('player')}
+          <button
+              className={activeTab === 'player' ? 'active' : ''}
+              onClick={() => setActiveTab('player')}
           >
             Kokoro
           </button>
-        </div>
-        
-        <div className="tab-content">
-          {activeTab === 'player' && (
-            <div className="tab-pane">
-              <KokoroPlayer 
-                allTextSentences={allTextSentences} 
-                currentIndex={currentIndex} 
-                setCurrentIndex={e => {
-                  console.log('setCurrentIndex', e)
-                  setCurrentIndex(e)
-                }}
-              />
-            </div>
-          )}
-          
-          {activeTab === 'controls' && (
-            <div className="tab-pane">
-              <SynthControls
-                text={post.selftext}
-                contentRef={contentRef}
-                currentIndex={Math.max(currentIndex, 0)}
-                setCurrentIndex={setCurrentIndex}
-                totalSentences={totalSentences}
-              />
-            </div>
-          )}
         </div>
       </div>
     </div>

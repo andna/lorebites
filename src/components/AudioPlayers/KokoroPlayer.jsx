@@ -137,66 +137,70 @@ export function KokoroPlayer({ allTextSentences, currentIndex, setCurrentIndex }
         <div className="loading-indicator">Initializing TTS...</div>
       ) : error ? (
         <div className="error-message">Error: {error}</div>
-      ) : (
-        <>
-          <button
-            className="tts-button"
-            onClick={handleTestTTS}
-            disabled={isLoading || playbackState === 'playing'}
-          >
-            {isLoading ? 'Streaming...' : 'Stream TTS'}
-          </button>
-
-
-          <div className="resume-controls">
-            <button
-              className="tts-button"
-              onClick={() => {handleResumeTTS(resumeIndex)}}
-              disabled={resumeIndex >= getAudioChunksCount()}
-            >
-              Resume From
-            </button>
-            <input
-              type="number"
-              min="0"
-              max={Math.max(0, getAudioChunksCount() - 1)}
-              value={resumeIndex}
-              onChange={(e) => {
-                const val = parseInt(e.target.value, 10) || 0;
-                const max = Math.max(0, getAudioChunksCount() - 1);
-                setResumeIndex(Math.min(val, max));
-              }}
-              className="resume-index-input"
-              disabled={playbackState === 'playing'}
-            />
-          </div>
-
-          <button
-            className={`tts-button play-pause-button ${playbackState}`}
-            onClick={handlePlayPause}
-            disabled={getAudioChunksCount() === 0 && playbackState === 'stopped'}
-          >
-            {playbackState === 'playing' ? '⏸️ Pause' : '▶️ Play'}
-          </button>
-          <div className="progress-info">
-            {progressText}
-          </div>
-          {/*
-          <AudioControls
-            isPlaying={isPlaying()}
-            onPlay={handlePlayPause}
-            onPause={togglePlayPause}
-            currentTime={getCurrentChunkIndex()}
-            totalTime={getAudioChunksCount()}
-            currentIndex={resumeIndex}
-            totalChunks={getAudioChunksCount()}
-            onSliderEvent={onSliderEvent}
-          />
-          */}
+      ) : (<div>
+            <div style={{display: "flex"}}>
+                  <button
+                    className="tts-button"
+                    onClick={handleTestTTS}
+                    disabled={isLoading || playbackState === 'playing'}
+                  >
+                    {isLoading ? 'Streaming...' : 'Stream TTS'}
+                  </button>
 
 
 
-        </>
+
+                  <button
+                    className={`tts-button play-pause-button ${playbackState}`}
+                    onClick={handlePlayPause}
+                    disabled={getAudioChunksCount() === 0 && playbackState === 'stopped'}
+                  >
+                    {playbackState === 'playing' ? '⏸️ Pause' : '▶️ Play'}
+                  </button>
+                  <div className="progress-info">
+                    {progressText}
+                  </div>
+                  {/*
+                  <AudioControls
+                    isPlaying={isPlaying()}
+                    onPlay={handlePlayPause}
+                    onPause={togglePlayPause}
+                    currentTime={getCurrentChunkIndex()}
+                    totalTime={getAudioChunksCount()}
+                    currentIndex={resumeIndex}
+                    totalChunks={getAudioChunksCount()}
+                    onSliderEvent={onSliderEvent}
+                  />
+                  */}
+
+              </div>
+
+              <div>
+
+                <div className="resume-controls">
+                  <button
+                      className="tts-button"
+                      onClick={() => {handleResumeTTS(resumeIndex)}}
+                      disabled={resumeIndex >= getAudioChunksCount()}
+                  >
+                    Resume From
+                  </button>
+                  <input
+                      type="number"
+                      min="0"
+                      max={Math.max(0, getAudioChunksCount() - 1)}
+                      value={resumeIndex}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value, 10) || 0;
+                        const max = Math.max(0, getAudioChunksCount() - 1);
+                        setResumeIndex(Math.min(val, max));
+                      }}
+                      className="resume-index-input"
+                      disabled={playbackState === 'playing'}
+                  />
+                </div>
+        </div>
+        </div>
       )}
     </div>
   );

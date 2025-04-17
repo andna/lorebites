@@ -1,7 +1,6 @@
 .audio-controls {
- 
+
   bottom: -1px;
-  width: calc(100% - 4rem);
   border-radius: 1rem 1rem 0 0 !important;
 }
 
@@ -72,17 +71,6 @@
   transition: transform 0.2s ease;
 }
 
-.content-slider:hover {
-  height: 6px;
-}
-
-.content-slider:hover::-webkit-slider-thumb {
-  transform: scale(1.2);
-}
-
-.content-slider:hover::-moz-range-thumb {
-  transform: scale(1.2);
-}
 
 /* Dark mode support */
 :root.dark .reading-progress {
