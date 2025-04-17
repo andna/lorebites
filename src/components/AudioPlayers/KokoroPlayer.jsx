@@ -4,6 +4,8 @@ import './KokoroPlayer.css';
 import { AudioControls } from './AudioControls';
 
 export function KokoroPlayer({ allTextSentences, currentIndex, setCurrentIndex }) {
+  // Track previous sentences to detect post changes
+  const prevSentencesRef = React.useRef([]);
   const {
     streamOnly,
     playFromIndex,
@@ -23,13 +25,59 @@ export function KokoroPlayer({ allTextSentences, currentIndex, setCurrentIndex }
   const [playbackState, setPlaybackState] = useState('stopped'); // 'playing', 'paused', 'stopped'
   const [progressText, setProgressText] = useState('No audio available');
   const [isLoading, setIsLoading] = useState(false);
+  // Detect changes in allTextSentences (new post loaded)
+  useEffect(() => {
+    // Simple check to detect if we have a new post
+    const prevFirstSentence = prevSentencesRef.current[0] || '';
+    const currentFirstSentence = allTextSentences[0] || '';
+    
+    // If first sentence has changed, we have a new post
+    if (prevFirstSentence !== currentFirstSentence && allTextSentences.length > 0) {
+      console.log('New post detected, clearing audio state and forcibly stopping any streaming');
+      
+      // Force stop streaming and reset loading state if active
+      if (isLoading) {
+        console.log('Interrupting active streaming process');
+        setIsLoading(false);
+      }
+      
+      // Clear any existing audio
+      stopAllAudio();
+      
+      // Reset playback state to stopped
+      setPlaybackState('stopped');
+      
+      // Update reference for next comparison
+      prevSentencesRef.current = [...allTextSentences];
+    }
+  }, [allTextSentences, stopAllAudio, isLoading]);
+
+  // Track current playback state outside the effect for better change detection
+  const [isCurrentlyPlaying, setIsCurrentlyPlaying] = useState(false);
+  const [hasAudioChunks, setHasAudioChunks] = useState(false);
+  
+  // Dedicated effect to turn off loading when playback starts
+  useEffect(() => {
+    if (isCurrentlyPlaying && hasAudioChunks && isLoading) {
+      console.log('Audio playback detected, turning off loading indicator');
+      setIsLoading(false);
+    }
+  }, [isCurrentlyPlaying, hasAudioChunks, isLoading]);
+  
   // Update playback state and progress text regularly
   useEffect(() => {
     const updateState = () => {
-      // Update playback state
-      if (isPlaying()) {
+      // Update playback state and track current state
+      const currentlyPlaying = isPlaying();
+      const currentlyPaused = isPaused();
+      const chunks = getAudioChunksCount();
+      
+      setIsCurrentlyPlaying(currentlyPlaying);
+      setHasAudioChunks(chunks > 0);
+      
+      if (currentlyPlaying) {
         setPlaybackState('playing');
-      } else if (isPaused()) {
+      } else if (currentlyPaused) {
         setPlaybackState('paused');
       } else {
         setPlaybackState('stopped');
@@ -51,8 +99,6 @@ export function KokoroPlayer({ allTextSentences, currentIndex, setCurrentIndex }
         setProgressText(`Chunk ${current + 1} of ${total}`);
       }
 
-      // Set loading state based on streaming status
-      setIsLoading(isStreaming());
     };
 
     // Update immediately
@@ -123,19 +169,30 @@ export function KokoroPlayer({ allTextSentences, currentIndex, setCurrentIndex }
     if (playbackState === 'playing') {
       // Currently playing, so pause
       await togglePlayPause();
-    } else if (playbackState === 'paused' || getAudioChunksCount() > 0) {
-      // Currently paused or has chunks to play
+    } else if (playbackState === 'paused') {
+      // Currently paused, just resume
       await togglePlayPause();
     } else {
-      // No audio chunks, stream first then play
-      console.log('No audio chunks available, streaming before playing');
+      // Either no audio chunks, or we have chunks but we're stopped
+      // Always stream TTS for a fresh start
+      console.log('Play button pressed, streaming TTS');
       setIsLoading(true);
+      
+      // Clear any existing audio to ensure a fresh stream
+      stopAllAudio();
+      
       try {
+        // Stream and play simultaneously
+        // Note: We don't set isLoading=false here anymore
+        // Instead, the useEffect that monitors playback state will handle it
         await streamAndPlayAudio(allTextSentences);
-        console.log('TTS streaming complete, now playing');
-        // Small delay to ensure audio context is ready
-        await new Promise(resolve => setTimeout(resolve, 100));
-        await togglePlayPause();
+        console.log('TTS streaming complete');
+        
+        // If streaming completed but playing didn't start (rare edge case)
+        if (isLoading && !isPlaying()) {
+          console.log('Streaming completed but playback did not start');
+          setIsLoading(false);
+        }
       } catch (err) {
         console.error('Error streaming TTS:', err);
         setIsLoading(false);
@@ -157,8 +214,9 @@ export function KokoroPlayer({ allTextSentences, currentIndex, setCurrentIndex }
 
 
                   <button
-                    className={`tts-button play-pause-button ${playbackState}`}
+                    className={`tts-button play-pause-button ${playbackState} ${isLoading ? 'loading' : ''}`}
                     onClick={handlePlayPause}
+                    disabled={isLoading}
                   >
                     {playbackState === 'playing' ? '⏸️ Pause' : '▶️ Play'}
                   </button>

@@ -51,6 +51,19 @@
   background-color: var(--info-color, #5bc0de);
 }
 
+/* Blinking animation for loading state */
+@keyframes button-loading-pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+
+.play-pause-button.loading {
+  animation: button-loading-pulse 1s infinite ease-in-out;
+  background-color: var(--primary-color, #4a6fa5);
+  pointer-events: none; /* Disable clicks while loading */
+}
+
 .resume-controls {
   display: flex;
   align-items: center;
