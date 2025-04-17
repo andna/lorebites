@@ -26,92 +26,100 @@ const SummarySchema = z.object({
   }),
 });
 
-app.post('/api/summarize', async (req, res) => {
-  try {
-    const { text } = req.body;
-    
-    if (!text) {
-      return res.status(400).json({ error: 'Text is required' });
-    }
+app.get('/api/stream', (req, res) => {
+  const { text } = req.query;
 
-    console.log('Received text to summarize:', text.substring(0, 100) + '...');
-    
-    const tightCut = 1; //140
-    const microCut = 2; //20
-
-    const prompt = `**ROLE & GOAL**
-    You're a *voice‑conscious fiction line‑editor*. Create **2 JSON versions** of the story:
-    
-    * **Tight Cut:** ${tightCut}‑${tightCut + 40} words  
-    * **Micro Cut:** ${microCut}‑${microCut + 30} words  
-    
-    List the exact word‑count after *each* version.
-    
-    **PRESERVE**
-    1. **Voice & Attitude** – slang, humor, rhythm; don't formalize.  
-    2. **Sensory & Emotional Hooks** – vivid sights, sounds, smells, body feels, running jokes.  
-    3. **Cinematic Pacing** – keep paragraph breaks & one‑line beats; merge only when tension isn't lost.  
-    4. **Key Plot Beats** – every turn survives.  
-    5. **Climax & Moral Resonance** – protect the emotional payoff or takeaway; make sure each cut lands with the same moral punch.
-    
-    **CUT**
-    • Redundant phrases, filler adverbs, over‑explained exposition.  
-    • Setting bits that don't affect mood or stakes.  
-    • Duplicate sensory images (keep the strongest).  
-    
-    **STYLE**
-    • Max sentence 25 words; vary lengths.  
-    • Use <br> cuts, but never use em‑dashes or semicolons.  
-    • Grammar stays clean unless it kills voice.  
-    
-    **OUTPUT (JSON only)**  
-    Return pure JSON with the following structure:
-    {
-      "tightCut": {
-        "content": "Tight cut content here...",
-        "wordCount": 150
-      },
-      "microCut": {
-        "content": "Micro cut content here...",
-        "wordCount": 60
-      }
-    }
-    
-    **INPUT**
-    \`\`\`
-    ${text.substring(0, 100)}
-    \`\`\``;
-
-    const stream = openai.beta.chat.completions
-      .stream({
-        model: "gpt-4o-mini-2024-07-18",
-        messages: [
-          { role: "system", content: "You are a helpful, precise assistant." },
-          { role: "user", content: prompt }
-        ],
-        response_format: zodResponseFormat(SummarySchema, "summary"),
-      })
-      .on("refusal.done", () => console.log("request refused"))
-      .on("content.delta", ({ snapshot, parsed }) => {
-        console.log("content:", snapshot);
-        console.log("parsed:", parsed);
-        console.log();
-      })
-      .on("content.done", (props) => {
-        console.log(props);
-      });
-
-    await stream.done();
-
-    const finalCompletion = await stream.finalChatCompletion();
-
-    console.log('Final Completion:', finalCompletion);
-
-    res.json({ summary: finalCompletion });
-  } catch (error) {
-    console.error('OpenAI API Error:', error);
-    res.status(500).json({ error: 'Failed to generate summary', details: error.message });
+  if (!text) {
+    console.error('No text provided');
+    res.status(400).json({ error: 'Text is required' });
+    return;
   }
+
+  console.log('Received text:', text);
+
+  const tightCut = 1; //120
+  const microCut = 2; //50
+
+  const prompt = `**ROLE & GOAL**
+  You're a *voice‑conscious fiction line‑editor*. Create **2 JSON versions** of the story:
+  
+  * **Tight Cut:** ${tightCut}‑${tightCut + 40} words  
+  * **Micro Cut:** ${microCut}‑${microCut + 30} words  
+  
+  List the exact word‑count after *each* version.
+  
+  **PRESERVE**
+  1. **Voice & Attitude** – slang, humor, rhythm; don't formalize.  
+  2. **Sensory & Emotional Hooks** – vivid sights, sounds, smells, body feels, running jokes.  
+  3. **Cinematic Pacing** – keep paragraph breaks & one‑line beats; merge only when tension isn't lost.  
+  4. **Key Plot Beats** – every turn survives.  
+  5. **Climax & Moral Resonance** – protect the emotional payoff or takeaway; make sure each cut lands with the same moral punch.
+  
+  **CUT**
+  • Redundant phrases, filler adverbs, over‑explained exposition.  
+  • Setting bits that don't affect mood or stakes.  
+  • Duplicate sensory images (keep the strongest).  
+  
+  **STYLE**
+  • Max sentence 25 words; vary lengths.  
+  • Use <br> cuts, but never use em‑dashes or semicolons.  
+  • Grammar stays clean unless it kills voice.  
+  
+  **OUTPUT (JSON only)**  
+  Return pure JSON with the following structure:
+  {
+    "tightCut": {
+      "content": "Tight cut content here...",
+      "wordCount": 150
+    },
+    "microCut": {
+      "content": "Micro cut content here...",
+      "wordCount": 60
+    }
+  }
+  
+  **INPUT**
+  \`\`\`
+  ${text.substring(0, 100)}
+  \`\`\``;
+
+  // Set SSE headers
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*'); // Allow any origin
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  const stream = openai.beta.chat.completions
+    .stream({
+      model: "gpt-4o-mini-2024-07-18",
+      messages: [
+        { role: "system", content: "You are a helpful, precise assistant." },
+        { role: "user", content: prompt }
+      ],
+      response_format: zodResponseFormat(SummarySchema, "summary"),
+      stream: true,
+    })
+    .on("content.delta", ({ delta, snapshot, parsed }) => {
+      // Send each delta (increment) with minimal content to show streaming
+      if (delta) {
+        res.write(`data: ${JSON.stringify({ content: delta })}\n\n`);
+      }
+    })
+    .on("content.done", (props) => {
+      // Signal completion
+      res.write(`data: ${JSON.stringify({ content: "\n[DONE]" })}\n\n`);
+      res.end();
+    });
+
+  stream.done().catch(error => {
+    console.error('Stream error:', error);
+    res.write(`data: ${JSON.stringify({ error: 'Stream error' })}\n\n`);
+    res.end();
+  });
 });
 
 app.listen(port, () => {

@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import './SummaryGenerator.css';
 
 export function SummaryGenerator({ selftext_html }) {
   const [summary, setSummary] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const dataReceivedRef = useRef(false);
 
-  const generateSummary = async () => {
+  const generateSummary = () => {
     if (!selftext_html) {
       setError('No content to summarize');
       return;
@@ -14,53 +15,68 @@ export function SummaryGenerator({ selftext_html }) {
 
     setLoading(true);
     setError(null);
+    setSummary('');
+    dataReceivedRef.current = false;
 
-    try {
+    const encodedText = encodeURIComponent(selftext_html);
+    const eventSource = new EventSource(`http://localhost:3002/api/stream?text=${encodedText}`);
 
-      console.log('Sending request to /api/summarize with text length:', selftext_html.length);
-
-      // Call your API endpoint
-      const response = await fetch('http://localhost:3002/api/summarize', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ text: selftext_html }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Server responded with status: ${response.status}`);
+    eventSource.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      if (data.error) {
+        setError(data.error);
+        eventSource.close();
+      } else if (data.content) {
+        dataReceivedRef.current = true;
+        
+        // Special handling for completion marker
+        if (data.content === "\n[DONE]") {
+          console.log('Stream completed successfully');
+        } else {
+          // Incrementally update with each token/delta
+          setSummary((prevSummary) => prevSummary + data.content);
+        }
       }
+    };
 
-      const data = await response.json();
-      setSummary(data.summary);
-      console.log('Tokens used:', data.tokenUsage);
-      console.log('Summary received and set');
-    } catch (err) {
-      console.error('Error generating summary:', err);
-      setError(`Failed to generate summary: ${err.message}`);
-    } finally {
+    eventSource.onerror = (err) => {
+      // Only log as error if we didn't receive data (otherwise it's expected behavior)
+      if (!dataReceivedRef.current) {
+        // This is a real error - no data received
+        console.log('EventSource connection ended without receiving data');
+        
+        // Only show error if absolutely no data was received
+        if (eventSource.readyState === EventSource.CLOSED) {
+          setError('Failed to receive any data');
+        } else {
+          setError('Connection error - please try again');
+        }
+      } else {
+        // Normal completion - we got data and the stream ended
+        // No need to log anything here
+      }
+      
       setLoading(false);
-    }
-  };
+      eventSource.close();
+    };
 
+    eventSource.onopen = () => {
+      setLoading(false);
+    };
+  };
 
   return (
     <div className="summary-generator">
-
       <h3>Post Summary</h3>
-
-
       <div className="summary-content">
         {!summary && !loading && !error && (
-            <button
-                className="generate-button"
-                onClick={generateSummary}
-                disabled={loading}
-            >
-              Generate AI Summary
-            </button>
+          <button
+            className="generate-button"
+            onClick={generateSummary}
+            disabled={loading}
+          >
+            Generate AI Summary
+          </button>
         )}
 
         {loading && <div className="loading">Generating summary...</div>}
@@ -68,16 +84,16 @@ export function SummaryGenerator({ selftext_html }) {
         {error && <div className="error">{error}</div>}
 
         {summary && (
-            <div className="summary-text">
-              <div dangerouslySetInnerHTML={{ __html: JSON.stringify(summary) }} />
-              <button
-                  className="regenerate-button"
-                  onClick={generateSummary}
-                  disabled={loading}
-              >
-                Regenerate
-              </button>
-            </div>
+          <div className="summary-text">
+            <div dangerouslySetInnerHTML={{ __html: summary }} />
+            <button
+              className="regenerate-button"
+              onClick={generateSummary}
+              disabled={loading}
+            >
+              Regenerate
+            </button>
+          </div>
         )}
       </div>
     </div>
