@@ -92,17 +92,13 @@ export function SummaryGenerator({ selftext_html }) {
           <div className="summary-container">
             <div className="summary-section">
               <h3>Bite Cut ({summaryData.biteCut.wordCount} words)</h3>
-              <div className="summary-text">
-                {summaryData.biteCut.content}
-              </div>
+              <div className="summary-text" dangerouslySetInnerHTML={{ __html: summaryData.biteCut.content }}></div>
             </div>
             
             {summaryData.shortCut?.content && (
               <div className="summary-section">
                 <h3>Short Cut ({summaryData.shortCut.wordCount} words)</h3>
-                <div className="summary-text">
-                  {summaryData.shortCut.content}
-                </div>
+                <div className="summary-text" dangerouslySetInnerHTML={{ __html: summaryData.shortCut.content }}></div>
               </div>
             )}
             <div className="button-container">

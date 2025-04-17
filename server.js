@@ -37,8 +37,8 @@ app.get('/api/stream', (req, res) => {
 
   console.log('Received text:', text);
 
-  const tightCut = 140;
-  const microCut = 80;
+  const tightCut = 120;
+  const microCut = 60;
 
   const prompt = `**ROLE & GOAL**
   You're a *voice‑conscious fiction line‑editor*. Create **2 JSON versions** of the story:
@@ -53,7 +53,10 @@ app.get('/api/stream', (req, res) => {
   2. **Sensory & Emotional Hooks** – vivid sights, sounds, smells, body feels, running jokes.  
   3. **Cinematic Pacing** – keep paragraph breaks & one‑line beats; merge only when tension isn't lost.  
   4. **Key Plot Beats** – every turn survives.  
-  5. **Climax & Moral Resonance** – protect the emotional payoff or takeaway; make sure each cut lands with the same moral punch.
+  5. **CRITICAL: Climax, Twist & Moral Resonance** – THE MOST IMPORTANT ELEMENT. You MUST preserve the emotional payoff, twist ending, or moral of the story. Both versions MUST deliver the same punch and revelation as the original.
+  
+  **CRUCIAL INSTRUCTION**
+  The twist/climax/reveal is the HEART of these stories. No matter how short the version, the reader MUST experience the same emotional impact and surprise of the original. The shorter the version, the more you should prioritize the twist ending and climactic moments.
   
   **CUT**
   • Redundant phrases, filler adverbs, over‑explained exposition.  
@@ -62,25 +65,26 @@ app.get('/api/stream', (req, res) => {
   
   **STYLE**
   • Max sentence 25 words; vary lengths.  
-  • Use <br> cuts, but never use em‑dashes or semicolons.  
+  • Use <br> for dramatic pauses and line breaks.
+  • Use <br><br> for paragraph breaks.
   • Grammar stays clean unless it kills voice.  
   
-  **OUTPUT (JSON only)**  
-  Return pure JSON with the following structure:
+  **OUTPUT FORMAT**  
+  Return pure JSON, but with HTML formatting in the content:
   {
     "biteCut": {
-      "content": "Bite cut content here...",
+      "content": "First sentence with tension.<br>Dramatic beat.<br><br>New paragraph with emotional hook...",
       "wordCount": 60
     },
     "shortCut": {
-      "content": "Short cut content here...",
-      "wordCount": 150
+      "content": "Longer version with more detail.<br>Dramatic pause.<br><br>Next paragraph...",
+      "wordCount": 120
     }
   }
   
   **INPUT**
   \`\`\`
-  ${text.substring(0, 100)}
+  ${text}
   \`\`\``;
 
   // Set SSE headers
@@ -101,6 +105,7 @@ app.get('/api/stream', (req, res) => {
         { role: "user", content: prompt }
       ],
       response_format: zodResponseFormat(SummarySchema, "summary"),
+      temperature: 0.5,
       stream: true,
     })
     .on("content.delta", ({ delta, snapshot, parsed }) => {
