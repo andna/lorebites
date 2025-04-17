@@ -16,6 +16,7 @@ export function KokoroPlayer({ allTextSentences, currentIndex, setCurrentIndex }
     isPaused,
     getCurrentChunkIndex,
     isStreaming,
+    streamAndPlayAudio
   } = useKokoro();
 
   const [resumeIndex, setResumeIndex] = useState(3);
@@ -126,8 +127,19 @@ export function KokoroPlayer({ allTextSentences, currentIndex, setCurrentIndex }
       // Currently paused or has chunks to play
       await togglePlayPause();
     } else {
-      // No audio chunks, alert user
-      alert('No audio chunks available. Stream the audio first.');
+      // No audio chunks, stream first then play
+      console.log('No audio chunks available, streaming before playing');
+      setIsLoading(true);
+      try {
+        await streamAndPlayAudio(allTextSentences);
+        console.log('TTS streaming complete, now playing');
+        // Small delay to ensure audio context is ready
+        await new Promise(resolve => setTimeout(resolve, 100));
+        await togglePlayPause();
+      } catch (err) {
+        console.error('Error streaming TTS:', err);
+        setIsLoading(false);
+      }
     }
   };
 
@@ -139,13 +151,7 @@ export function KokoroPlayer({ allTextSentences, currentIndex, setCurrentIndex }
         <div className="error-message">Error: {error}</div>
       ) : (<div>
             <div style={{display: "flex"}}>
-                  <button
-                    className="tts-button"
-                    onClick={handleTestTTS}
-                    disabled={isLoading || playbackState === 'playing'}
-                  >
-                    {isLoading ? 'Streaming...' : 'Stream TTS'}
-                  </button>
+                  {/* Stream TTS button removed - functionality moved to Play button */}
 
 
 
@@ -153,7 +159,6 @@ export function KokoroPlayer({ allTextSentences, currentIndex, setCurrentIndex }
                   <button
                     className={`tts-button play-pause-button ${playbackState}`}
                     onClick={handlePlayPause}
-                    disabled={getAudioChunksCount() === 0 && playbackState === 'stopped'}
                   >
                     {playbackState === 'playing' ? '⏸️ Pause' : '▶️ Play'}
                   </button>

@@ -246,13 +246,19 @@ export function KokoroProvider({ children }) {
     }
   };
 
-  // Stream and play audio - this is the main function that handles streaming
-  async function streamAndPlayAudio(text) {
+  // Combined function for streaming audio with optional playback
+  // If sentences is an array, it uses those sentences, otherwise treats input as plain text
+  // If playWhileStreaming is true, start playing as soon as chunks are available
+  async function streamAudio(input, playWhileStreaming = false) {
     if (!kokoroTTS) {
       console.error("Kokoro TTS not initialized");
       return false;
     }
 
+    // Determine if input is array of sentences or plain text
+    const isArrayInput = Array.isArray(input);
+    const textToStream = isArrayInput ? input : input.toString();
+    
     // Stop any existing audio and reset state
     stopAllAudio();
     audioChunksRef.current = [];
@@ -261,10 +267,10 @@ export function KokoroProvider({ children }) {
     isPausedRef.current = false;
     isStreamingRef.current = true;
 
-    // Create a log of processed tokens
-    const processedTokens = [];
+    // Create a log of processed items
+    const processedItems = [];
 
-    console.log("STREAM: Starting to stream speech for text");
+    console.log(`STREAM: Starting to stream speech${playWhileStreaming ? ' and play' : ' only'}`);
     try {
       // Get a fresh audio context
       const audioContext = getAudioContext();
@@ -273,22 +279,19 @@ export function KokoroProvider({ children }) {
       const { TextSplitterStream } = await import("https://cdn.jsdelivr.net/npm/kokoro-js/+esm");
       const splitter = new TextSplitterStream();
 
-      console.log(splitter, 'splitterrrr')
       const stream = kokoroTTS.stream(splitter, {
-        voice: voices.female
+        voice: voices.female,
+        speed: playbackRate
       });
 
-      // Start playback in a separate promise that we can track
-      playbackPromiseRef.current = playSequentially(0);
-
-      // Process stream in parallel with playback
+      // Process stream and handle playback based on flag
       (async () => {
         try {
           let chunkCount = 0;
           for await (const chunk of stream) {
             // Check if stopped
             if (isStoppedRef.current) {
-              console.log("STREAM: Playback was stopped, exiting stream processing");
+              console.log("STREAM: Processing was stopped, exiting stream processing");
               break;
             }
 
@@ -302,13 +305,18 @@ export function KokoroProvider({ children }) {
 
               console.log(`STREAM: Added chunk ${chunkCount}, total chunks now: ${audioChunksRef.current.length}`);
 
-              // Log the growing array of tokens at milestones
+              // Log progress at milestones
               if (chunkCount === 1 || chunkCount === 5 || chunkCount === 10 || chunkCount % 10 === 0) {
-                console.log('TOKEN PROGRESS:', processedTokens.join(' '));
+                if (isArrayInput) {
+                  console.log('SENTENCE PROGRESS:', processedItems.length, 'sentences processed');
+                } else {
+                  console.log('TOKEN PROGRESS:', processedItems.join(' '));
+                }
               }
 
-              // If this is the first chunk and we're not already playing, start playback
-              if (audioChunksRef.current.length === 1 && !activeSourceRef.current && !isPausedRef.current) {
+              // If playback is enabled, start playing as soon as first chunk is available
+              if (playWhileStreaming && audioChunksRef.current.length === 1 && 
+                 !activeSourceRef.current && !isPausedRef.current) {
                 console.log("STREAM: Starting playback of first chunk");
                 playbackPromiseRef.current = playSequentially(0);
               }
@@ -316,7 +324,6 @@ export function KokoroProvider({ children }) {
           }
 
           console.log("STREAM: Stream processing completed, all chunks collected");
-          console.log('FINAL TEXT:', processedTokens.join(' '));
           isStreamingRef.current = false;
         } catch (streamError) {
           console.error("STREAM: Error in stream processing:", streamError);
@@ -324,23 +331,36 @@ export function KokoroProvider({ children }) {
         }
       })();
 
-      // Push tokens to stream
-      const tokens = text.match(/\s*\S+/g) || [text];
-      console.log(`STREAM: Pushing ${tokens.length} tokens to stream`);
+      // Push content to stream
+      if (isArrayInput) {
+        // Input is array of sentences
+        for (let i = 0; i < textToStream.length; i++) {
+          if (isStoppedRef.current) break;
+          const sentence = textToStream[i];
+          processedItems.push(sentence); // Add to our log
+          console.log(`STREAM SENTENCE ${i+1}/${textToStream.length}:`, sentence.substring(0, 30) + '...');
+          splitter.push(sentence);
+          await new Promise(resolve => setTimeout(resolve, 20));
+        }
+      } else {
+        // Input is plain text, split into tokens
+        const tokens = textToStream.match(/\s*\S+/g) || [textToStream];
+        console.log(`STREAM: Pushing ${tokens.length} tokens to stream`);
 
-      for (let i = 0; i < tokens.length; i++) {
-        if (isStoppedRef.current) break;
-        const token = tokens[i];
-        processedTokens.push(token); // Add to our log
-        console.log(`STREAM TOKEN ${i+1}/${tokens.length}:`, token);
-        splitter.push(token);
-        await new Promise(resolve => setTimeout(resolve, 20));
+        for (let i = 0; i < tokens.length; i++) {
+          if (isStoppedRef.current) break;
+          const token = tokens[i];
+          processedItems.push(token); // Add to our log
+          console.log(`STREAM TOKEN ${i+1}/${tokens.length}:`, token);
+          splitter.push(token);
+          await new Promise(resolve => setTimeout(resolve, 20));
+        }
       }
 
       splitter.close();
 
-      // Wait for playback to complete
-      if (playbackPromiseRef.current) {
+      // If playback was started and we want to wait for it to complete
+      if (playWhileStreaming && playbackPromiseRef.current) {
         await playbackPromiseRef.current;
       }
 
@@ -396,94 +416,13 @@ export function KokoroProvider({ children }) {
     return isStreamingRef.current;
   }
 
-  // Stream only without playing audio
-  async function streamOnly(allTextSentences) {
-    if (!kokoroTTS) {
-      console.error("Kokoro TTS not initialized");
-      return false;
-    }
-
-    // Stop any existing audio and reset state
-    stopAllAudio();
-    audioChunksRef.current = [];
-    currentChunkIndexRef.current = 0;
-    isStoppedRef.current = false;
-    isPausedRef.current = false;
-    isStreamingRef.current = true;
-
-    // Create a log of processed sentences
-    const processedSentences = [];
-
-    console.log("STREAM ONLY: Starting to stream speech for text");
-    try {
-      // Get a fresh audio context
-      const audioContext = getAudioContext();
-      await audioContext.resume();
-
-      const { TextSplitterStream } = await import("https://cdn.jsdelivr.net/npm/kokoro-js/+esm");
-      const splitter = new TextSplitterStream();
-
-      console.log(splitter, 'splitterrrr')
-
-      const stream = kokoroTTS.stream(splitter, {
-        voice: voices.female,
-        speed: playbackRate
-      });
-
-      // Process stream without starting playback
-      (async () => {
-        try {
-          let chunkCount = 0;
-          for await (const chunk of stream) {
-            // Check if stopped
-            if (isStoppedRef.current) {
-              console.log("STREAM ONLY: Streaming was stopped, exiting stream processing");
-              break;
-            }
-
-            if (chunk.audio && chunk.audio.audio && chunk.audio.audio.length > 0) {
-              const audioData = chunk.audio.audio;
-              const samplingRate = chunk.audio.sampling_rate || 24000;
-
-              // Add chunk to our collection
-              audioChunksRef.current.push({ audioData, samplingRate });
-              chunkCount++;
-
-              console.log(`STREAM ONLY: Added chunk ${chunkCount}, total chunks now: ${audioChunksRef.current.length}`);
-              
-              // Log the growing array of text chunks if we're at certain milestones
-              if (chunkCount === 1 || chunkCount === 5 || chunkCount === 10 || chunkCount % 10 === 0) {
-                console.log('SENTENCE PROGRESS:', processedSentences);
-              }
-            }
-          }
-
-          console.log("STREAM ONLY: Stream processing completed, all chunks collected");
-          console.log('FINAL SENTENCES:', processedSentences);
-          isStreamingRef.current = false;
-        } catch (streamError) {
-          console.error("STREAM ONLY: Error in stream processing:", streamError);
-          isStreamingRef.current = false;
-        }
-      })();
-
-      // Push tokens to stream
-      for (let i = 0; i < allTextSentences.length; i++) {
-        if (isStoppedRef.current) break;
-        const token = allTextSentences[i];
-        processedSentences.push(token); // Add to our log
-        console.log(`STREAM SENTENCE ${i+1}/${allTextSentences.length}:`, token);
-        splitter.push(token);
-        await new Promise(resolve => setTimeout(resolve, 20));
-      }
-
-      splitter.close();
-      return true;
-    } catch (error) {
-      console.error("STREAM ONLY: Error setting up streaming:", error);
-      isStreamingRef.current = false;
-      return false;
-    }
+  // Backward compatibility wrappers
+  async function streamAndPlayAudio(text) {
+    return streamAudio(text, true);
+  }
+  
+  async function streamOnly(sentences) {
+    return streamAudio(sentences, false);
   }
 
   // Clean up on unmount
