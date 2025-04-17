@@ -37,16 +37,18 @@ app.get('/api/stream', (req, res) => {
 
   console.log('Received text:', text);
 
-  const biteCut = 60;
-  const shortCut = 120;
+  const biteCut = 80;
+  const shortCut = 160;
 
   const prompt = `**ROLE & GOAL**
-  You're a *voice‑conscious fiction line‑editor*. Create **2 JSON versions** of the story:
+  You're a *voice‑conscious fiction line‑editor*. Create **2 JSON versions** of the story with STRICTLY ENFORCED word counts:
   
-  * **Bite Cut:** ${biteCut}‑${biteCut + 30} words
-  * **Short Cut:** ${shortCut}‑${shortCut + 40} words  
+  * **Bite Cut:** STRICTLY ${biteCut}‑${biteCut + 20} words MAXIMUM (VERY SHORT)
+  * **Short Cut:** STRICTLY ${shortCut}‑${shortCut + 30} words (LONGER VERSION)
   
-  List the exact word‑count after *each* version.
+  **CRITICAL: WORD COUNT ENFORCEMENT**
+  The word counts MUST be respected. Bite Cut MUST be significantly shorter than Short Cut.
+  Short Cut should be approximately DOUBLE the length of Bite Cut.
   
   **PRESERVE**
   1. **Voice & Attitude** – slang, humor, rhythm; don't formalize.  
@@ -77,7 +79,7 @@ app.get('/api/stream', (req, res) => {
       "wordCount": ${biteCut}
     },
     "shortCut": {
-      "content": "Longer version with more detail.<br>Dramatic pause.<br><br>Next paragraph...",
+      "content": "Longer version with much more detail and context.<br>Additional emotional hooks.<br><br>Extended paragraph with richer description and character development...",
       "wordCount": ${shortCut}
     }
   }
