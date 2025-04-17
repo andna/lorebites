@@ -1,5 +1,5 @@
 .audio-controls {
-  position: fixed;
+ 
   bottom: -1px;
   width: calc(100% - 4rem);
   border-radius: 1rem 1rem 0 0 !important;

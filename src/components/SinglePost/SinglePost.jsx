@@ -5,6 +5,7 @@ import { KokoroPlayer } from '../AudioPlayers/KokoroPlayer';
 import { CommentsList } from './CommentsList';
 import { SummaryGenerator } from './SummaryGenerator';
 import './SinglePost.css';
+import './SinglePostTabs.css';
 
 // Function to get storage key for caching post data
 const getPostStorageKey = (subredditName, postId) => {
@@ -82,6 +83,7 @@ export function SinglePost({ post: propPost }) {
   const [processedContent, setProcessedContent] = useState('');
   const [totalSentences, setTotalSentences] = useState(0);
   const [allTextSentences, setAllTextSentences] = useState([]);
+  const [activeTab, setActiveTab] = useState('player');
   const contentRef = useRef(null);
 
 
@@ -360,22 +362,52 @@ export function SinglePost({ post: propPost }) {
       />
 
 
-<KokoroPlayer allTextSentences={allTextSentences} currentIndex={currentIndex} setCurrentIndex={e => {
-        console.log('setCurrentIndex', e)
-        setCurrentIndex(e)
-      }}/>
-}
+<CommentsList post={post} />
 
-      <CommentsList post={post} />
-
-      <SynthControls
-          text={post.selftext}
-          contentRef={contentRef}
-          currentIndex={Math.max(currentIndex, 0)}
-          setCurrentIndex={setCurrentIndex}
-          totalSentences={totalSentences}
-      />
-
+      {/* Fixed bottom tab container */}
+      <div className="fixed-bottom-tabs">
+        <div className="tab-buttons">
+          <button 
+            className={activeTab === 'controls' ? 'active' : ''}
+            onClick={() => setActiveTab('controls')}
+          >
+            Synth
+          </button>
+          <button 
+            className={activeTab === 'player' ? 'active' : ''}
+            onClick={() => setActiveTab('player')}
+          >
+            Kokoro
+          </button>
+        </div>
+        
+        <div className="tab-content">
+          {activeTab === 'player' && (
+            <div className="tab-pane">
+              <KokoroPlayer 
+                allTextSentences={allTextSentences} 
+                currentIndex={currentIndex} 
+                setCurrentIndex={e => {
+                  console.log('setCurrentIndex', e)
+                  setCurrentIndex(e)
+                }}
+              />
+            </div>
+          )}
+          
+          {activeTab === 'controls' && (
+            <div className="tab-pane">
+              <SynthControls
+                text={post.selftext}
+                contentRef={contentRef}
+                currentIndex={Math.max(currentIndex, 0)}
+                setCurrentIndex={setCurrentIndex}
+                totalSentences={totalSentences}
+              />
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
