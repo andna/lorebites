@@ -11,6 +11,11 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+const maxInputTokens = {
+  low: 10000,
+  high: 1000
+}
+
 app.use(cors());
 app.use(express.json());
 
@@ -101,7 +106,8 @@ app.get('/api/stream', (req, res) => {
 
   const stream = openai.beta.chat.completions
     .stream({
-      model: "gpt-4o-mini-2024-07-18",
+      //      model: "gpt-4o-mini-2024-07-18",
+      model: "gpt-4.1-mini",
       messages: [
         { role: "system", content: "You are a helpful, precise assistant." },
         { role: "user", content: prompt }
