@@ -7,8 +7,8 @@ export function PostsList({ subreddit, onSelectPost }) {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false); // New state for "load more" loading
   const [error, setError] = useState(null);
-  const [timeRange, setTimeRange] = useState('day');
-  const [sort] = useState('top'); // Default sort is 'top'
+  const [timeRange, setTimeRange] = useState('month');
+  const [sort] = useState('top'); // Default sort is 'top' and timeRange is month
   const [after, setAfter] = useState(null); // Track pagination "after" parameter
 
   // Add a ref to track if we've already fetched for this subreddit+sort+timeRange

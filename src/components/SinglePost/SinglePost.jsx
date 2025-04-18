@@ -75,7 +75,7 @@ const cachePost = (subredditName, postId, post) => {
   }
 };
 
-export function SinglePost({ post: propPost }) {
+export function SinglePost({ post: propPost, setCurrentPost }) {
   const [post, setPost] = useState(propPost);
   const [loading, setLoading] = useState(!propPost);
   const [error, setError] = useState(null);
@@ -85,6 +85,13 @@ export function SinglePost({ post: propPost }) {
   const [allTextSentences, setAllTextSentences] = useState([]);
   const [activeTab, setActiveTab] = useState('kokoro');
   const contentRef = useRef(null);
+
+  // Sync parent state when post changes (for header title)
+  useEffect(() => {
+    if (setCurrentPost && post) {
+      setCurrentPost(post);
+    }
+  }, [post, setCurrentPost]);
 
 
   // Process HTML content on component mount

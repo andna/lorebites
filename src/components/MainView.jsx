@@ -9,7 +9,7 @@ import './MainView.css';
 
 // The main router component
 export function MainView() {
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(true);
 
   // Check if we're in development mode
   const isDev = true//process.env.NODE_ENV === 'development';
@@ -118,7 +118,7 @@ function MainContent({ darkMode, setDarkMode }) {
         )}
 
         {isSinglePostsView && currentPost && (
-          <SinglePost post={currentPost} />
+          <SinglePost post={currentPost} setCurrentPost={setCurrentPost} />
         )}
       </main>
     </div>
