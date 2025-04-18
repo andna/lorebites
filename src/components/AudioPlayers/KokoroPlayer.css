@@ -1,6 +1,9 @@
 .kokoro-player {
   
 }
+.loading-indicator{
+  background: #27282e;
+}
 
 .loading-indicator,
 .error-message {

@@ -24,7 +24,8 @@ const SummarySchema = z.object({
  */
 async function streamSummary({ 
   text, 
-  apiKey = process.env.OPENAI_API_KEY
+  apiKey = process.env.OPENAI_API_KEY,
+  dangerouslyAllowBrowser = false
 }, res) {
 
   const biteCut = 80;
@@ -107,6 +108,7 @@ async function streamSummary({
   // Initialize OpenAI client
   const openai = new OpenAI({
     apiKey: apiKey,
+    dangerouslyAllowBrowser
   });
 
   try {
