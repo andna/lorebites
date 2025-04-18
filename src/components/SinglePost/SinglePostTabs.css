@@ -9,7 +9,10 @@
 
 .tab-buttons {
   display: flex;
-  border-bottom: 1px solid #333;
+  position: absolute;
+  z-index: 1;
+  bottom: 4rem;
+  right: 0.6rem;
 }
 
 .tab-buttons button {
@@ -17,11 +20,13 @@
   background-color: #111;
   color: #888;
   border: none;
-  padding: 12px 0;
-  font-size: 14px;
+  padding: 0.6rem 0;
+  font-size: 0.7rem;
   cursor: pointer;
   transition: all 0.3s ease;
   border-radius: 0;
+  min-height: initial;
+  box-sizing: content-box;
 }
 .tab-buttons button:hover{
   background: black;
@@ -30,7 +35,7 @@
 
 .tab-buttons button.active {
   background-color: #000;
-  color: #f47521;
+  color: white;
   font-weight: bold;
 }
 
@@ -38,15 +43,3 @@
   
 }
 
-
-/* Ensure comments aren't hidden behind fixed tabs */
-.comments-list,
-.comment-list-container {
-  margin-bottom: 220px;
-}
-
-/* Ensure the last element in the page has enough margin */
-.comments-list:last-child,
-.post-content:last-child {
-  margin-bottom: 240px;
-}

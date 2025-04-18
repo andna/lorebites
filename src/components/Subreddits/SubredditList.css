@@ -46,6 +46,7 @@
 
 .s-desc{
   min-height: 2rem;
+  font-size: 90%;
 }
 
 .s-grid .card:hover .s-desc{

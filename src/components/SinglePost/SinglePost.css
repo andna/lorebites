@@ -5,13 +5,18 @@
   padding-bottom: 10rem;
 }
 
+.coming-soon {
+  background: #988e63;
+  padding: 20px;
+  border-radius: 1rem 1rem 0 0;
+}
+  
 
 .post-content {
   flex: 1;
   overflow-y: auto;
-  padding: 1rem;
   line-height: 1.6;
-  font-size: 1.1rem;
+  font-size: 1rem;
 }
 
 .post-content p {

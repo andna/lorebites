@@ -31,12 +31,13 @@ export function MainView() {
 }
 
 // The actual content component
-function MainContent({ darkMode, setDarkMode }) {
+function MainContent() {
   const navigate = useNavigate();
   const params = useParams();
   const { subredditName, postId } = params;
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [darkMode, setDarkMode] = useState(true); // Default to dark mode
   const [currentSubreddit, setCurrentSubreddit] = useState(null);
   const [currentPost, setCurrentPost] = useState(null);
 

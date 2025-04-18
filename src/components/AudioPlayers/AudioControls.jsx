@@ -51,9 +51,11 @@ export function AudioControls({
             {currentTime} / {totalTime}
           </div>
         </div>
-        <button className="audio-controls-top-right" onClick={changeSpeed}>
-          {speechSpeed}x
-        </button>
+        {speechSpeed && (
+          <button className="audio-controls-top-right" onClick={changeSpeed}>
+            {speechSpeed}x
+          </button>
+        )}
       </div>
       <input
         type="range"

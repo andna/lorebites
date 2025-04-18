@@ -89,6 +89,9 @@ button:hover {
 
 }
 
+.title{
+    font-weight: 900;
+}
 
 .action-header {
     display: flex;
@@ -98,6 +101,7 @@ button:hover {
     border-radius: 0 0 1rem 1rem;
     padding: 2rem 1rem 1rem;
     margin-top: -2rem;
+    z-index: 1;
 }
 
 .is-posts-list .action-header {

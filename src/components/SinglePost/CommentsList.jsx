@@ -188,8 +188,12 @@ export function CommentsList({ post }) {
             <div key={comment.id} className="comment-card">
               <div className="comment-header">
                 <div className="comment-number">#{index + 1}</div>
-                <div className="comment-author">u/{comment.author}</div>
-                <div className="comment-score">{comment.score} 👍</div>
+
+                <div>
+                  <div className="comment-author">u/{comment.author}</div>
+                  <div className="comment-score">👍 {comment.score}</div>
+                </div>  
+                
               </div>
               
               <div 

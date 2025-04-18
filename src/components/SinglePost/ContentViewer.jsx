@@ -238,6 +238,9 @@ export function ContentViewer({ selftext_html, processedContent, contentRef }) {
           </div>
         )}
 
+        <h3 className="end-of-content">The End</h3>
+
+
         {(activeTab === 'shortcut' || activeTab === 'bitecut') && summaryData.biteCut?.content && (
           <div className="button-container">
             <button

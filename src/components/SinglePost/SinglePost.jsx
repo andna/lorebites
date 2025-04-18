@@ -395,7 +395,7 @@ export function SinglePost({ post: propPost, setCurrentPost }) {
 
           {activeTab === 'openai' && (
              
-             <div style={{ textAlign: 'center', background: 'black', padding: 20 }}>
+             <div className="coming-soon">
               <p>Coming soon...</p>
               <a target="_blank" href="https://openai.fm/">Voice samples ↗️</a>
 

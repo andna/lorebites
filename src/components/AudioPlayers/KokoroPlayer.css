@@ -1,11 +1,5 @@
 .kokoro-player {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 10px;
-  border-top: 1px solid var(--border-color, #ddd);
-  background-color: var(--bg-primary, #f9f9f9);
+  
 }
 
 .loading-indicator,
@@ -64,6 +58,10 @@
   pointer-events: none; /* Disable clicks while loading */
 }
 
+.audio-controls-container.is-loading {
+  animation: button-loading-pulse 1s infinite ease-in-out;
+}
+
 .resume-controls {
   display: flex;
   align-items: center;
@@ -86,18 +84,3 @@
   text-align: right;
 }
 
-/* Dark mode support */
-:root.dark .kokoro-player {
-  background-color: var(--bg-primary-dark, #222);
-  border-color: var(--border-color-dark, #444);
-}
-
-:root.dark .progress-info {
-  color: var(--text-secondary-dark, #aaa);
-}
-
-:root.dark .resume-index-input {
-  background-color: var(--input-bg-dark, #333);
-  color: var(--text-primary-dark, #eee);
-  border-color: var(--border-color-dark, #555);
-}

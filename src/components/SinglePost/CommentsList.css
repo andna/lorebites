@@ -1,13 +1,13 @@
 .comments-section {
-  margin-top: 10rem;
-  padding-top: 20px;
-  border-top: 1px solid #e0e0e0;
+  margin-top: 5rem;
+  background: #00000026;
+  border-radius: 1rem;
 }
 
 .comments-section h2 {
   font-size: 1.4rem;
   margin-bottom: 15px;
-  color: #333;
+  text-align: center;
 }
 
 .comments-loading,
@@ -43,13 +43,10 @@
   font-size: 0.9rem;
 }
 
-.comment-author {
-  font-weight: bold;
-  color: #4a6fa5;
-}
-
+.comment-author,
 .comment-score {
   color: #666;
+  text-align: right;
 }
 
 .comment-body {

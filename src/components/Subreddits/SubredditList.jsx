@@ -4,12 +4,12 @@ import './SubredditList.css'; // Create this file for styling
 export function SubredditList({ onSelectSubreddit }) {
   // Moved the subreddits array from main.js
   const subreddits = [
-    {
-      "sub": "noSleep",
-      "subs": 18,
-      "desc": "Original horror told as if they were real.",
-      "emoji": "📖💀"
-    },
+    // {
+    //   "sub": "noSleep",
+    //   "subs": 18,
+    //   "desc": "Original horror told as if they were real.",
+    //   "emoji": "📖💀"
+    // },
     {
       "sub": "TIFU",
       "subs": 18,
@@ -43,8 +43,8 @@ export function SubredditList({ onSelectSubreddit }) {
     {
       "sub": "PettyRevenge",
       "subs": 4,
-      "desc": "",
-      "emoji": ""
+       "desc": "Minor but satisfying acts of revenge on everyday wrongs.",
+  "emoji": "😈💅"
     },
     // {
     //   "sub": "ProRevenge",

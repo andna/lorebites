@@ -186,7 +186,7 @@ export function PostsList({ subreddit, onSelectPost }) {
               >
                 <div>
                   <h2 className="post-title">{post.title}</h2>
-                  <small>{post.selftext?.slice(0, 200)}...</small>
+                  <small className="post-preview">{post.selftext?.slice(0, 200)}...</small>
                 </div>
                 <div className="post-meta">
                   <div>{formatRelativeTime(post.created_utc)}</div>

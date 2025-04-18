@@ -91,12 +91,12 @@ export function KokoroPlayer({ allTextSentences, currentIndex, setCurrentIndex }
       }
 
       if (total === 0) {
-        setProgressText('No audio available');
+        setProgressText('Stream first');
       } else if (isStreaming()) {
-        setProgressText(`Streaming: ${total} chunks so far...`);
+        setProgressText(`Streaming: ${total} chunks...`);
       } else {
         // Add 1 to indexes for display (1-based instead of 0-based)
-        setProgressText(`Chunk ${current + 1} of ${total}`);
+        setProgressText(total + 1);
       }
 
     };
@@ -210,10 +210,9 @@ export function KokoroPlayer({ allTextSentences, currentIndex, setCurrentIndex }
           <a target="_blank" href="https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX#voicessamples">Voice samples ↗️</a>
           </div>
       ) : (<div>
+        {/*
             <div style={{display: "flex"}}>
-                  {/* Stream TTS button removed - functionality moved to Play button */}
-
-
+               
 
 
                   <button
@@ -226,18 +225,8 @@ export function KokoroPlayer({ allTextSentences, currentIndex, setCurrentIndex }
                   <div className="progress-info">
                     {progressText}
                   </div>
-                  {/*
-                  <AudioControls
-                    isPlaying={isPlaying()}
-                    onPlay={handlePlayPause}
-                    onPause={togglePlayPause}
-                    currentTime={getCurrentChunkIndex()}
-                    totalTime={getAudioChunksCount()}
-                    currentIndex={resumeIndex}
-                    totalChunks={getAudioChunksCount()}
-                    onSliderEvent={onSliderEvent}
-                  />
-                  */}
+                  
+              
 
               </div>
 
@@ -265,7 +254,23 @@ export function KokoroPlayer({ allTextSentences, currentIndex, setCurrentIndex }
                       disabled={playbackState === 'playing'}
                   />
                 </div>
+ 
         </div>
+      */}
+
+              <div className={`audio-controls-container ${isLoading ? 'is-loading' : ''}`}>
+              <AudioControls
+                    isPlaying={isPlaying()}
+                    onPlay={handlePlayPause}
+                    onPause={togglePlayPause}
+                    currentTime={getCurrentChunkIndex() + 1}
+                    totalTime={progressText}
+                    currentIndex={resumeIndex}
+                    totalChunks={getAudioChunksCount()}
+                    onSliderEvent={onSliderEvent}
+                  />
+                  </div>
+                 
         </div>
       )}
     </div>

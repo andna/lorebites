@@ -27,7 +27,17 @@
 }
 
 
+.post-preview{
+  opacity: 0.3;
+  transition: opacity 0.2s ease;
+}
 
+.posts-list .card{
+  cursor: pointer;
+}
+.posts-list .card:hover .post-preview{
+  opacity: 1;
+}
 
 
 
@@ -44,6 +54,7 @@
   margin-top: 12px;
   font-size: 0.9rem;
   color: var(--text-secondary, #666);
+  justify-content: space-around;
 }
 
 .loading, .error {
