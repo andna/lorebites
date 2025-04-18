@@ -110,19 +110,78 @@ export function ContentViewer({ selftext_html, processedContent, contentRef }) {
       className={`tab-button ${active ? 'active' : ''}`}
       onClick={onClick}
     >
+      <span>
       <b>{label}</b> 
       <br />
       <small>{count > 0 && `${count} words`}</small>
+      </span>
     </button>
   );
+
+  const topContentTabs = "calc(3rem - 2px)";
+  const tabsRef = useRef(null);
+  const tabsPositionRef = useRef(null);
+  const [isSticky, setIsSticky] = useState(false);
+
+  // Use scroll event to detect when tabs become sticky
+  useEffect(() => {
+    if (!tabsRef.current) return;
+    
+    // Store the initial position of the tabs
+    // We'll use this to determine when they become sticky
+    const calculateTabPosition = () => {
+      if (tabsRef.current) {
+        // Get the position of the tabs relative to the viewport
+        const rect = tabsRef.current.getBoundingClientRect();
+        tabsPositionRef.current = rect.top + window.scrollY; // Store the absolute position
+      }
+    };
+    
+    // Calculate on mount
+    calculateTabPosition();
+    
+    // On scroll, check if we've scrolled past the tabs' original position
+    const handleScroll = () => {
+      if (tabsPositionRef.current === null) return;
+      
+      // The sticky point is when we've scrolled past the tabs' original position
+      // minus the sticky top offset (approximately 48px)
+      const stickyPoint = tabsPositionRef.current - 48;
+      const isCurrentlySticky = window.scrollY > stickyPoint;
+      
+      if (isSticky !== isCurrentlySticky) {
+        setIsSticky(isCurrentlySticky);
+      }
+    };
+    
+    // Add scroll listener
+    window.addEventListener('scroll', handleScroll);
+    // Also listen for resize, as this could change the position
+    window.addEventListener('resize', calculateTabPosition);
+    
+    // Initial check
+    handleScroll();
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', calculateTabPosition);
+    };
+  }, [isSticky]);
 
   return (
     <div className="content-viewer">
       {/* Tab navigation */}
+      
+      {/* No longer need the intersection observer trigger */}
 
       <h3 className="content-title">Choose a length</h3> 
       
-      <div className="content-tabs">
+      <div 
+        ref={tabsRef}
+        className={`content-tabs ${isSticky ? 'sticky-active' : ''}`} 
+        style={{
+          top: topContentTabs
+        }}>
         <TabButton
           label="Full"
           count={wordCounts.original}
