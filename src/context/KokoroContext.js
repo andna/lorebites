@@ -1,5 +1,7 @@
 import React, { createContext, useState, useEffect, useContext, useRef } from 'react';
-import { KokoroTTS } from "https://cdn.jsdelivr.net/npm/kokoro-js/+esm";
+
+// Don't import directly, we'll handle it dynamically with better error handling
+// import { KokoroTTS, TextSplitterStream } from "https://cdn.jsdelivr.net/npm/kokoro-js/+esm";
 
 const KokoroContext = createContext(null);
 
@@ -28,7 +30,80 @@ export function KokoroProvider({ children }) {
 
   // Ref to track if initialization has already occurred
   const hasInitializedRef = useRef(false);
+  
+  // Store the KokoroLib reference for use across functions
+  const kokoroLibRef = useRef(null);
 
+  // Browser compatibility detection
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  const [browserCompatible, setBrowserCompatible] = useState(true); // Start optimistic
+  const [errorSource, setErrorSource] = useState(null); // Track where errors occur
+  const [runtimeError, setRuntimeError] = useState(null); // Track actual runtime error message
+  
+  // Global error handler for uncaught runtime errors
+  useEffect(() => {
+    // Function to handle uncaught errors
+    const handleRuntimeError = (event) => {
+      console.error('Runtime error captured:', event);
+      
+      // Extract error message
+      const errorMessage = event.message || 'Unknown error';
+      const errorStack = event.error && event.error.stack || '';
+      
+      // Only handle Kokoro-related errors
+      if (errorMessage.includes('kokoro') || 
+          errorStack.includes('kokoro') ||
+          errorMessage.includes('undefined is not a function')) {
+        
+        // Prevent default browser error handling
+        event.preventDefault();
+        
+        // Update state
+        setRuntimeError(errorMessage);
+        setBrowserCompatible(false);
+        setErrorSource('runtime_error');
+        
+        // Log for debugging
+        console.warn('Safari compatibility issue detected:', errorMessage);
+      }
+    };
+    
+    // Handle unhandled Promise rejections (like in the screenshot)
+    const handlePromiseRejection = (event) => {
+      console.error('Promise rejection captured:', event);
+      
+      // Get error details from the promise rejection
+      const error = event.reason;
+      const errorMessage = error ? (error.message || String(error)) : 'Unknown promise error';
+      const errorStack = error && error.stack ? error.stack : '';
+      
+      // Check if this is the specific kokoro.web.js error from the screenshot
+      if (errorMessage.includes('undefined is not a function') ||
+          errorStack.includes('kokoro.web.js')) {
+        
+        // Prevent default handling
+        event.preventDefault();
+        
+        // Set error state to trigger UI display
+        setRuntimeError(`TypeScript Error: ${errorMessage}`);
+        setBrowserCompatible(false);
+        setErrorSource('promise_rejection');
+        
+        console.warn('Safari promise rejection detected:', errorMessage);
+      }
+    };
+    
+    // Add global error handlers
+    window.addEventListener('error', handleRuntimeError);
+    window.addEventListener('unhandledrejection', handlePromiseRejection);
+    
+    // Clean up
+    return () => {
+      window.removeEventListener('error', handleRuntimeError);
+      window.removeEventListener('unhandledrejection', handlePromiseRejection);
+    };
+  }, []);
+  
   // Initialize Kokoro
   useEffect(() => {
     async function initKokoro() {
@@ -36,8 +111,30 @@ export function KokoroProvider({ children }) {
 
       setIsInitializing(true);
       hasInitializedRef.current = true; // Set the ref to true to prevent re-initialization
+      
       try {
         console.log("Starting Kokoro initialization...");
+        
+        // Dynamic import with better error handling
+        try {
+          // Load the library and store in ref for use across component
+          const importedLib = await import("https://cdn.jsdelivr.net/npm/kokoro-js/+esm");
+          kokoroLibRef.current = importedLib;
+          
+          // Initial import successful
+          console.log("Kokoro library import successful");
+          setBrowserCompatible(true);
+        } catch (importError) {
+          console.error("Error loading Kokoro library:", importError);
+          setBrowserCompatible(false);
+          setErrorSource('import');
+          setError("Failed to load Kokoro TTS library. This browser may not be compatible with ES modules from CDN.");
+          setIsInitializing(false);
+          return; // Exit initialization but don't throw
+        }
+        
+        // Destructure after successful import
+        const { KokoroTTS } = kokoroLibRef.current;
 
         // Check for webgpu support
         const device = 'gpu' in navigator ? 'webgpu' : 'wasm'; // Fallback to wasm if webgpu is not available
@@ -276,8 +373,26 @@ export function KokoroProvider({ children }) {
       const audioContext = getAudioContext();
       await audioContext.resume();
 
-      const { TextSplitterStream } = await import("https://cdn.jsdelivr.net/npm/kokoro-js/+esm");
-      const splitter = new TextSplitterStream();
+      // Create TextSplitterStream instance with error handling
+let splitter;
+try {
+  // Check if library is loaded
+  if (!kokoroLibRef.current) {
+    throw new Error("Kokoro library not loaded yet");
+  }
+  
+  // Use the stored library reference
+  const { TextSplitterStream } = kokoroLibRef.current;
+  splitter = new TextSplitterStream();
+  console.log("TextSplitterStream created successfully");
+} catch (error) {
+  console.error("Error creating TextSplitterStream:", error);
+  setBrowserCompatible(false);
+  setErrorSource('textSplitter');
+  setError("Failed to initialize text stream. Browser compatibility issue.");
+  setIsInitializing(false);
+  return false; // Exit function but don't throw
+}
 
       const stream = kokoroTTS.stream(splitter, {
         voice: voices.female,
@@ -431,6 +546,25 @@ export function KokoroProvider({ children }) {
       stopAllAudio();
     };
   }, []);
+
+  // Debug information for troubleshooting
+  useEffect(() => {
+    console.log("Current state:", {
+      browserCompatible,
+      isInitializing,
+      kokoroTTS: !!kokoroTTS,
+      error,
+      errorSource,
+      isSafari
+    });
+  }, [browserCompatible, isInitializing, kokoroTTS, error, errorSource, isSafari]);
+
+  // Render content based on browser compatibility
+
+
+  if (!browserCompatible && !isInitializing && !error) {
+    setError("Browser compatibility issue");
+  }
 
   return (
     <KokoroContext.Provider

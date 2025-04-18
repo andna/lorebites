@@ -205,7 +205,10 @@ export function KokoroPlayer({ allTextSentences, currentIndex, setCurrentIndex }
       {isInitializing ? (
         <div className="loading-indicator">Initializing TTS...</div>
       ) : error ? (
-        <div className="error-message">Error: {error}</div>
+        <div className="error-message">Kokoro Error: {error} <br></br> 
+          <p>Use desktop Chrome or Edge, or change to Synth</p>
+          <a target="_blank" href="https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX#voicessamples">Voice samples ↗️</a>
+          </div>
       ) : (<div>
             <div style={{display: "flex"}}>
                   {/* Stream TTS button removed - functionality moved to Play button */}

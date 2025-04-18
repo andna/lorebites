@@ -201,7 +201,7 @@ export function SinglePost({ post: propPost }) {
 
   }, [post]);
 
-  console.log('reff-allsentences', allTextSentences)
+ // console.log('reff-allsentences', allTextSentences)
   // Highlight the current sentence whenever currentIndex changes
   useEffect(() => {
     if (!contentRef.current) return;
