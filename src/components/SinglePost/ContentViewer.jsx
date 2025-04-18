@@ -1,14 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import './ContentViewer.css'; // We'll continue using the same CSS for now
-
-// Function to count words in HTML content
-const countWords = (htmlContent) => {
-  if (!htmlContent) return 0;
-  // Remove HTML tags and replace <br> with spaces
-  const plainText = htmlContent.replace(/<br\s*\/?>/gi, ' ').replace(/<\/?[^>]+(>|$)/g, '');
-  // Count words (split by whitespace and filter out empty strings)
-  return plainText.trim().split(/\s+/).filter(word => word.length > 0).length;
-};
+import './ContentViewer.css';
+import { countWords, generateSummary } from '../../utils/summaryUtils';
 
 export function ContentViewer({ selftext_html, processedContent, contentRef }) {
   const [activeTab, setActiveTab] = useState('full');
@@ -33,75 +25,50 @@ export function ContentViewer({ selftext_html, processedContent, contentRef }) {
     }));
   }, [selftext_html]);
 
-  const generateSummary = () => {
-    if (!selftext_html) {
-      setError('No content to summarize');
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    setSummaryData({
-      biteCut: { content: '' },
-      shortCut: { content: '' }
-    });
-    setWordCounts(prev => ({
-      ...prev,
-      biteCut: 0,
-      shortCut: 0
-    }));
-    dataReceivedRef.current = false;
-
-    const encodedText = encodeURIComponent(selftext_html);
-    const eventSource = new EventSource(`http://localhost:3002/api/stream?text=${encodedText}`);
-
-    eventSource.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      dataReceivedRef.current = true;
-      
-      if (data.error) {
-        setError(data.error);
-        eventSource.close();
-      } else if (data.done) {
-        console.log('Stream completed successfully');
-      } else if (data.raw) {
-        console.log('Received raw delta:', data.raw);
-      } else {
-        // Handle structured JSON with biteCut and shortCut
+  const handleSummaryGeneration = () => {
+    // Use the extracted utility function
+    generateSummary({
+      text: selftext_html,
+      onStart: () => {
+        setLoading(true);
+        setError(null);
+        setSummaryData({
+          biteCut: { content: '' },
+          shortCut: { content: '' }
+        });
+        setWordCounts(prev => ({
+          ...prev,
+          biteCut: 0,
+          shortCut: 0
+        }));
+        dataReceivedRef.current = false;
+      },
+      onData: (data) => {
+        dataReceivedRef.current = true;
         setSummaryData(data);
-        
-        // Calculate word counts from the received data
         setWordCounts(prev => ({
           ...prev,
           biteCut: countWords(data.biteCut?.content),
           shortCut: countWords(data.shortCut?.content)
         }));
+      },
+      onError: (errorMessage) => {
+        setError(errorMessage);
+        setLoading(false);
+      },
+      onComplete: () => {
+        setLoading(false);
       }
-    };
-
-    eventSource.onerror = (err) => {
-      if (!dataReceivedRef.current) {
-        if (eventSource.readyState === EventSource.CLOSED) {
-          setError('Failed to receive any data');
-        } else {
-          setError('Connection error - please try again');
-        }
-      }
-      
-      setLoading(false);
-      eventSource.close();
-    };
-
-    eventSource.onopen = () => {
-      setLoading(false);
-    };
+    });
   };
 
   // Check if we need to generate summaries when user switches to a tab that needs them
   useEffect(() => {
-    if ((activeTab === 'shortcut' || activeTab === 'bitecut') && 
-        !summaryData.biteCut.content && !loading && !error) {
-      generateSummary();
+    if ((activeTab === 'bite' || activeTab === 'short') && 
+        !summaryData[activeTab === 'bite' ? 'biteCut' : 'shortCut'].content && 
+        !loading && 
+        !error) {
+      handleSummaryGeneration();
     }
   }, [activeTab]);
 
@@ -191,14 +158,14 @@ export function ContentViewer({ selftext_html, processedContent, contentRef }) {
         <TabButton
           label="Short"
           count={wordCounts.shortCut}
-          active={activeTab === 'shortcut'}
-          onClick={() => setActiveTab('shortcut')}
+          active={activeTab === 'short'}
+          onClick={() => setActiveTab('short')}
         />
         <TabButton
           label="Bite"
           count={wordCounts.biteCut}
-          active={activeTab === 'bitecut'}
-          onClick={() => setActiveTab('bitecut')}
+          active={activeTab === 'bite'}
+          onClick={() => setActiveTab('bite')}
         />
       </div>
 
@@ -212,7 +179,7 @@ export function ContentViewer({ selftext_html, processedContent, contentRef }) {
           />
         )}
 
-        {activeTab === 'shortcut' && (
+        {activeTab === 'short' && (
           <div className="post-content">
             {loading && <div className="loading">Generating summary...</div>}
             {error && <div className="error">{error}</div>}
@@ -225,7 +192,7 @@ export function ContentViewer({ selftext_html, processedContent, contentRef }) {
           </div>
         )}
 
-        {activeTab === 'bitecut' && (
+        {activeTab === 'bite' && (
           <div className="post-content">
             {loading && <div className="loading">Generating summary...</div>}
             {error && <div className="error">{error}</div>}
@@ -241,11 +208,11 @@ export function ContentViewer({ selftext_html, processedContent, contentRef }) {
         <h3 className="end-of-content">The End</h3>
 
 
-        {(activeTab === 'shortcut' || activeTab === 'bitecut') && summaryData.biteCut?.content && (
+        {(activeTab === 'short' || activeTab === 'bite') && summaryData.biteCut?.content && (
           <div className="button-container">
             <button
-              className="regenerate-button"
-              onClick={generateSummary}
+              className="generate-button"
+              onClick={handleSummaryGeneration}
               disabled={loading}
             >
               Regenerate
