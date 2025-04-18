@@ -368,7 +368,7 @@ export function SinglePost({ post: propPost }) {
       <div className="fixed-bottom-tabs">
 
         <div className="tab-content">
-          {activeTab === 'player' && (
+          {activeTab === 'kokoro' && (
               <KokoroPlayer
                   allTextSentences={allTextSentences}
                   currentIndex={currentIndex}
@@ -379,7 +379,7 @@ export function SinglePost({ post: propPost }) {
               />
           )}
 
-          {activeTab === 'controls' && (
+          {activeTab === 'synth' && (
               <SynthControls
                   text={post.selftext}
                   contentRef={contentRef}
@@ -388,20 +388,35 @@ export function SinglePost({ post: propPost }) {
                   totalSentences={totalSentences}
               />
           )}
+
+          {activeTab === 'openai' && (
+             
+             <div style={{ textAlign: 'center', background: 'black', padding: 20 }}>
+              <p>Coming soon...</p>
+              <a target="_blank" href="https://openai.fm/">Voice samples ↗️</a>
+
+             </div>
+          )}
         </div>
 
         <div className="tab-buttons">
           <button
-              className={activeTab === 'controls' ? 'active' : ''}
-              onClick={() => setActiveTab('controls')}
+              className={activeTab === 'synth' ? 'active' : ''}
+              onClick={() => setActiveTab('synth')}
           >
             Synth
           </button>
           <button
-              className={activeTab === 'player' ? 'active' : ''}
-              onClick={() => setActiveTab('player')}
+              className={activeTab === 'kokoro' ? 'active' : ''}
+              onClick={() => setActiveTab('kokoro')}
           >
             Kokoro
+          </button>
+          <button
+              className={activeTab === 'openai' ? 'active' : ''}
+              onClick={() => setActiveTab('openai')}
+          >
+            OpenAI
           </button>
         </div>
       </div>
