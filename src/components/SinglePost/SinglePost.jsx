@@ -5,7 +5,6 @@ import { KokoroPlayer } from '../AudioPlayers/KokoroPlayer';
 import { CommentsList } from './CommentsList';
 import { ContentViewer } from './ContentViewer';
 import './SinglePost.css';
-import './SinglePostTabs.css';
 
 // Function to get storage key for caching post data
 const getPostStorageKey = (subredditName, postId) => {

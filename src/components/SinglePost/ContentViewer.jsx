@@ -25,10 +25,14 @@ export function ContentViewer({ selftext_html, processedContent, contentRef }) {
     }));
   }, [selftext_html]);
 
-  const handleSummaryGeneration = () => {
-    // Use the extracted utility function
+  const handleSummaryGeneration = (priorityTab = null) => {
+    // Use the extracted utility function with the priorityTab parameter
+    // If priorityTab is null, it will use the currently active tab
+    const selectedTab = priorityTab || activeTab;
+    
     generateSummary({
       text: selftext_html,
+      priorityTab: selectedTab === 'full' ? null : selectedTab === 'bite' ? 'bite' : 'short',
       onStart: () => {
         setLoading(true);
         setError(null);
@@ -68,7 +72,7 @@ export function ContentViewer({ selftext_html, processedContent, contentRef }) {
         !summaryData[activeTab === 'bite' ? 'biteCut' : 'shortCut'].content && 
         !loading && 
         !error) {
-      handleSummaryGeneration();
+      handleSummaryGeneration(activeTab);
     }
   }, [activeTab]);
 
@@ -212,7 +216,7 @@ export function ContentViewer({ selftext_html, processedContent, contentRef }) {
           <div className="button-container">
             <button
               className="generate-button"
-              onClick={handleSummaryGeneration}
+              onClick={() => handleSummaryGeneration(activeTab)}
               disabled={loading}
             >
               Regenerate

@@ -20,12 +20,15 @@ const SummarySchema = z.object({
  * @param {Object} options Configuration options
  * @param {string} options.text The text to summarize
  * @param {string} options.apiKey OpenAI API key
+ * @param {boolean} options.dangerouslyAllowBrowser Allow browser usage
+ * @param {string} options.priorityTab Tab to prioritize ('bite' or 'short')
  * @param {Object} res Response object with write, end, setHeader methods
  */
 async function streamSummary({ 
   text, 
   apiKey = process.env.OPENAI_API_KEY,
-  dangerouslyAllowBrowser = false
+  dangerouslyAllowBrowser = false,
+  priorityTab = null
 }, res) {
 
   const biteCut = 80;
@@ -43,11 +46,20 @@ async function streamSummary({
   console.log('Received text input for summarization');
 
   // Build the prompt with the specified parameters
+  let promptPriority = '';
+  
+  // Add priority instructions if a priority tab is specified
+  if (priorityTab === 'bite') {
+    promptPriority = '\n\n**PRIORITY INSTRUCTION**\nFocus on completing the Bite Cut FIRST, before working on the Short Cut. The user wants to see the Bite Cut version as quickly as possible.';
+  } else if (priorityTab === 'short') {
+    promptPriority = '\n\n**PRIORITY INSTRUCTION**\nFocus on completing the Short Cut FIRST, before working on the Bite Cut. The user wants to see the Short Cut version as quickly as possible.';
+  }
+  
   const prompt = `**ROLE & GOAL**
   You're a *voice‑conscious fiction line‑editor*. Create **2 JSON versions** of the story with STRICTLY ENFORCED word counts:
   
   * **Bite Cut:** STRICTLY ${biteCut}‑${biteCut + 20} words MAXIMUM (VERY SHORT)
-  * **Short Cut:** STRICTLY ${shortCut}‑${shortCut + 30} words (LONGER VERSION)
+  * **Short Cut:** STRICTLY ${shortCut}‑${shortCut + 30} words (LONGER VERSION)${promptPriority}
   
   **CRITICAL: WORD COUNT ENFORCEMENT**
   The word counts MUST be respected. Bite Cut MUST be significantly shorter than Short Cut.

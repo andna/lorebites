@@ -23,6 +23,7 @@ export const countWords = (htmlContent) => {
  * @param {Function} options.onError Callback when an error occurs
  * @param {Function} options.onComplete Callback when summary generation completes
  * @param {string} options.apiEndpoint API endpoint for summary generation
+ * @param {string} options.priorityTab Tab to prioritize in summary generation ('bite' or 'short')
  */
 export const generateSummary = ({
   text,
@@ -31,7 +32,8 @@ export const generateSummary = ({
   onError = () => {},
   onComplete = () => {},
   apiEndpoint = 'http://localhost:3002/api/stream',
-  useServerEventSource = false
+  useServerEventSource = false,
+  priorityTab = null
 }) => {
   if (!text) {
     onError('No content to summarize');
@@ -119,6 +121,8 @@ export const generateSummary = ({
               const newApiKey = prompt('Error detected. Please enter a valid OpenAI API key:');
               if (newApiKey && newApiKey !== apiKey) {
                 console.log('Retrying with new API key');
+                // Save new API key to localStorage
+                localStorage.setItem('openai_api_key', newApiKey);
                 makeOpenAIRequest(newApiKey);
                 return;
               } else {
@@ -140,6 +144,8 @@ export const generateSummary = ({
             // Always reprompt on any error
             const newApiKey = prompt('Error detected. Please enter a valid OpenAI API key:');
             if (newApiKey && newApiKey !== apiKey) {
+              // Save new API key to localStorage
+              localStorage.setItem('openai_api_key', newApiKey);
               makeOpenAIRequest(newApiKey);
             } else {
               onError('API key is required. Operation canceled.');
@@ -162,6 +168,8 @@ export const generateSummary = ({
             // Always reprompt on any error
             const newApiKey = prompt('Error detected. Please enter a valid OpenAI API key:');
             if (newApiKey && newApiKey !== apiKey) {
+              // Save new API key to localStorage
+              localStorage.setItem('openai_api_key', newApiKey);
               makeOpenAIRequest(newApiKey);
             } else {
               onError('API key is required. Operation canceled.');
@@ -172,8 +180,13 @@ export const generateSummary = ({
       };
       
       try {
-        // Call the streamSummary function directly
-        streamSummary({ text, apiKey, dangerouslyAllowBrowser: true }, mockResponse);
+        // Call the streamSummary function directly with priorityTab
+        streamSummary({ 
+          text, 
+          apiKey, 
+          dangerouslyAllowBrowser: true,
+          priorityTab
+        }, mockResponse);
       } catch (error) {
         console.error('Error calling streamSummary:', error);
         
@@ -181,6 +194,8 @@ export const generateSummary = ({
         console.error('Stream init error:', error);
         const newApiKey = prompt('Error initializing OpenAI. Please enter a valid API key:');
         if (newApiKey && newApiKey !== apiKey) {
+          // Save new API key to localStorage
+          localStorage.setItem('openai_api_key', newApiKey);
           makeOpenAIRequest(newApiKey);
         } else {
           onError('API key is required. Operation canceled.');
@@ -192,8 +207,19 @@ export const generateSummary = ({
       return () => {};
     };
     
-    // Prompt for initial API key
-    const initialApiKey = prompt('Please enter your OpenAI API key:');
+    // Check if API key is stored in localStorage
+    let initialApiKey = localStorage.getItem('openai_api_key');
+    
+    // If no API key is found in localStorage, prompt the user
+    if (!initialApiKey) {
+      initialApiKey = prompt('Please enter your OpenAI API key:');
+      
+      // If user provided a key, save it to localStorage for future use
+      if (initialApiKey) {
+        localStorage.setItem('openai_api_key', initialApiKey);
+      }
+    }
+    
     return makeOpenAIRequest(initialApiKey);
   }
 };

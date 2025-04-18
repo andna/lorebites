@@ -86,3 +86,9 @@
   font-weight: 300;
   font-size: 140%;
 }
+
+.generate-button{
+  background: black;
+  border-radius: 0rem;
+  font-family: monospace;
+}
