@@ -1,0 +1,26 @@
+
+.content-title{
+ text-align: center; 
+ margin: 3rem 0 -1rem;
+}
+
+.content-tabs{
+  position: sticky;
+  top: calc(3rem - 2px);
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  margin: 3rem 0.7rem;
+  padding-top: 1rem;
+}
+
+
+.tab-button{
+  border-radius: 0;
+  background: #5f7590;
+
+}
+
+.tab-button small{
+  opacity: 0.4;
+}

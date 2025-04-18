@@ -3,7 +3,7 @@ import { formatRelativeTime } from '../../utils/formatters';
 import { SynthControls } from '../AudioPlayers/SynthControls';
 import { KokoroPlayer } from '../AudioPlayers/KokoroPlayer';
 import { CommentsList } from './CommentsList';
-import { SummaryGenerator } from './SummaryGenerator';
+import { ContentViewer } from './ContentViewer';
 import './SinglePost.css';
 import './SinglePostTabs.css';
 
@@ -83,7 +83,7 @@ export function SinglePost({ post: propPost }) {
   const [processedContent, setProcessedContent] = useState('');
   const [totalSentences, setTotalSentences] = useState(0);
   const [allTextSentences, setAllTextSentences] = useState([]);
-  const [activeTab, setActiveTab] = useState('player');
+  const [activeTab, setActiveTab] = useState('kokoro');
   const contentRef = useRef(null);
 
 
@@ -352,13 +352,10 @@ export function SinglePost({ post: propPost }) {
       </div>
 
 
-      <SummaryGenerator selftext_html={post.selftext_html} />
-
-
-      <div
-        className="post-content"
-        ref={contentRef}
-        dangerouslySetInnerHTML={{ __html:  processedContent }}
+      <ContentViewer 
+        selftext_html={post.selftext_html}
+        processedContent={processedContent}
+        contentRef={contentRef}
       />
 
 

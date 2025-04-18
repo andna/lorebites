@@ -35,16 +35,9 @@
 }
 
 .tab-content {
-  overflow: hidden;
-  max-height: 180px; /* Set a fixed height for the tab content */
-  transition: max-height 0.3s ease;
+  
 }
 
-
-/* Add some bottom padding to the main content to avoid it being hidden behind the tabs */
-.post-content {
-  margin-bottom: 220px;
-}
 
 /* Ensure comments aren't hidden behind fixed tabs */
 .comments-list,
