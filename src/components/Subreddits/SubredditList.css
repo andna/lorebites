@@ -46,7 +46,6 @@
 
 .s-desc{
   min-height: 2rem;
-  font-size: 90%;
 }
 
 .s-grid .card:hover .s-desc{
@@ -59,7 +58,7 @@
   opacity: 0.5;
 
   filter: sepia(0.1) hue-rotate(-15deg) grayscale(0.7);
-  font-size: 20vw;
+  font-size: 75px;
   letter-spacing: -1rem;
   right: 0;
   bottom: 0;
@@ -68,7 +67,7 @@
 
 .s-grid .card:hover  .s-emoji {
   filter: sepia(0) hue-rotate(0deg) grayscale(0);
-  font-size: 20vw;
+  font-size: 75px;
   letter-spacing: -2rem;
   right: 2rem;
   bottom: -2rem;

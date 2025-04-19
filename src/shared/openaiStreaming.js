@@ -33,7 +33,8 @@ async function streamSummary({
 
   const biteCut = 80;
   const shortCut = 160; 
-  const model = "gpt-4o-mini-2024-07-18";
+  //const model = "gpt-4o-mini-2024-07-18";
+  const model = "gpt-4.1-mini";
   const temperature = 0.5;
   const frequency_penalty = 0.3;
   

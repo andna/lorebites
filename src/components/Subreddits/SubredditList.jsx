@@ -40,12 +40,12 @@ export function SubredditList({ onSelectSubreddit }) {
       "desc": "Following orders exactly, with amusing or dramatic results.",
       "emoji": "📌😏"
     },
-    {
-      "sub": "PettyRevenge",
-      "subs": 4,
-       "desc": "Minor but satisfying acts of revenge on everyday wrongs.",
-  "emoji": "😈💅"
-    },
+    //{
+    //  "sub": "PettyRevenge",
+    //  "subs": 4,
+    //  "desc": "Minor but satisfying acts of revenge on everyday wrongs.",
+    //  "emoji": "😈💅"
+    //},
     // {
     //   "sub": "ProRevenge",
     //   "subs": 2,
@@ -64,12 +64,27 @@ export function SubredditList({ onSelectSubreddit }) {
       "desc": "Concise but chilling terror.",
       "emoji": "👻👁"
     },
+    //{
+    //  "sub": "TalesFromRetail",
+    //  "subs": 1,
+    //  "desc": "Awful, weird, or funny retail customer experiences.",
+    //  "emoji": "🛒😤"
+    //}
+
     {
-      "sub": "TalesFromRetail",
-      "subs": 1,
-      "desc": "Awful, weird, or funny retail customer experiences.",
-      "emoji": "🛒😤"
-    }
+      "sub": "Classics",
+      "subs": 0,
+      "desc": "Public domain books.",
+      "emoji": "🏛️📚",
+      "comingSoon": true
+    },
+    {
+      "sub": "Other threads",
+      "subs": 0,
+      "desc": "Twitter, Hacker News, Tumblr, Wattpad, AO3, etc.",
+      "emoji": "📋🧵",
+      "comingSoon": true
+    },
   ];
 
   // Render the subreddit grid
@@ -79,15 +94,18 @@ export function SubredditList({ onSelectSubreddit }) {
         <div
           key={sub.sub}
           className="card"
-          onClick={() => onSelectSubreddit(sub)}
+          onClick={() => !sub.comingSoon && onSelectSubreddit(sub)}
+          style={{
+            opacity: sub.comingSoon ? 0.8 : 1
+          }}
         >
-          <h2 className="s-title">
-            <small>r/</small>
+          <h3 className="s-title">
+            {!sub.comingSoon && <small>r/</small>}
             {sub.sub}
-          </h2>
+          </h3>
           <p className="s-desc">{sub.desc}</p>
           <span className="s-emoji">{sub.emoji}</span>
-          <span className="s-members">~{sub.subs}M</span>
+          <span className="s-members">{sub.comingSoon ? "Soon..." : `~${sub.subs}M`}</span>
         </div>
       ))}
     </div>

@@ -185,7 +185,7 @@ export function ContentViewer({ selftext_html, processedContent, contentRef }) {
 
         {activeTab === 'short' && (
           <div className="post-content">
-            {loading && <div className="loading">Generating summary...</div>}
+            {loading && wordCounts.shortCut === 0 && <div className="summary-loading">Generating summaries...</div>}
             {error && <div className="error">{error}</div>}
             
             {summaryData.shortCut?.content ? (
@@ -198,7 +198,7 @@ export function ContentViewer({ selftext_html, processedContent, contentRef }) {
 
         {activeTab === 'bite' && (
           <div className="post-content">
-            {loading && <div className="loading">Generating summary...</div>}
+            {loading && wordCounts.biteCut === 0 && <div className="summary-loading">Generating summaries...</div>}
             {error && <div className="error">{error}</div>}
             
             {summaryData.biteCut?.content ? (
@@ -212,7 +212,7 @@ export function ContentViewer({ selftext_html, processedContent, contentRef }) {
         <h3 className="end-of-content">The End</h3>
 
 
-        {(activeTab === 'short' || activeTab === 'bite') && summaryData.biteCut?.content && (
+        {false && (activeTab === 'short' || activeTab === 'bite') && summaryData.biteCut?.content && (
           <div className="button-container">
             <button
               className="generate-button"
