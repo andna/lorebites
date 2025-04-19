@@ -3,17 +3,36 @@ const OpenAI = require('openai');
 const { z } = require('zod');
 const { zodResponseFormat } = require('openai/helpers/zod');
 
-// Define the schema for the response (formerly in server.js)
-const SummarySchema = z.object({
-  biteCut: z.object({
-    content: z.string(),
-    wordCount: z.number(),
-  }),
-  shortCut: z.object({
-    content: z.string(),
-    wordCount: z.number(),
-  }),
-});
+// Define the schema for the response with dynamic ordering based on priority
+const createSummarySchema = (priorityTab) => {
+  // Create schema properties with the prioritized property first
+  const schemaProps = {};
+  
+  // Determine which property should come first in the schema
+  if (priorityTab === 'short') {
+    // Short Cut first
+    schemaProps.shortCut = z.object({
+      content: z.string(),
+      wordCount: z.number(),
+    });
+    schemaProps.biteCut = z.object({
+      content: z.string(),
+      wordCount: z.number(),
+    });
+  } else {
+    // Bite Cut first (default)
+    schemaProps.biteCut = z.object({
+      content: z.string(),
+      wordCount: z.number(),
+    });
+    schemaProps.shortCut = z.object({
+      content: z.string(),
+      wordCount: z.number(),
+    });
+  }
+  
+  return z.object(schemaProps);
+};
 
 /**
  * Stream text summarization from OpenAI
@@ -48,12 +67,18 @@ async function streamSummary({
 
   // Build the prompt with the specified parameters
   let promptPriority = '';
+  let formatExample = '';
   
   // Add priority instructions if a priority tab is specified
   if (priorityTab === 'bite') {
-    promptPriority = '\n\n**PRIORITY INSTRUCTION**\nFocus on completing the Bite Cut FIRST, before working on the Short Cut. The user wants to see the Bite Cut version as quickly as possible.';
+    promptPriority = `\n\n**PRIORITY INSTRUCTION**\nTHE USER NEEDS THE BITE CUT FIRST. Generate and return the Bite Cut BEFORE working on the Short Cut.\n\n⚠️ IMPORTANT: Return the BITE CUT FIRST in your response.\n⚠️ CRITICAL: Do not start working on Short Cut until Bite Cut is complete.`;
+    
+    formatExample = `\n\nEXAMPLE OUTPUT FORMAT:\n{\n  "biteCut": {\n    "content": "First provide the Bite Cut...\n    "wordCount": ${biteCut}\n  },\n  "shortCut": {\n    "content": "Then provide the Short Cut...\n    "wordCount": ${shortCut}\n  }\n}`;
+    
   } else if (priorityTab === 'short') {
-    promptPriority = '\n\n**PRIORITY INSTRUCTION**\nFocus on completing the Short Cut FIRST, before working on the Bite Cut. The user wants to see the Short Cut version as quickly as possible.';
+    promptPriority = `\n\n**PRIORITY INSTRUCTION**\nTHE USER NEEDS THE SHORT CUT FIRST. Generate and return the Short Cut BEFORE working on the Bite Cut.\n\n⚠️ IMPORTANT: Return the SHORT CUT FIRST in your response.\n⚠️ CRITICAL: Do not start working on Bite Cut until Short Cut is complete.`;
+    
+    formatExample = `\n\nEXAMPLE OUTPUT FORMAT:\n{\n  "shortCut": {\n    "content": "First provide the Short Cut...\n    "wordCount": ${shortCut}\n  },\n  "biteCut": {\n    "content": "Then provide the Bite Cut...\n    "wordCount": ${biteCut}\n  }\n}`;
   }
   
   const prompt = `**ROLE & GOAL**
@@ -88,17 +113,24 @@ async function streamSummary({
   • Grammar stays clean unless it kills voice.  
   
   **OUTPUT FORMAT**  
-  Return pure JSON, but with HTML formatting in the content:
+  Return pure JSON, but with HTML formatting in the content.${formatExample || `
   {
+    ${priorityTab === 'short' ? `"shortCut": {
+      "content": "Longer version with much more detail and context.<br>Additional emotional hooks.<br><br>Extended paragraph with richer description and character development...",
+      "wordCount": ${shortCut}
+    },
     "biteCut": {
+      "content": "First sentence with tension.<br>Dramatic beat.<br><br>New paragraph with emotional hook...",
+      "wordCount": ${biteCut}
+    }` : `"biteCut": {
       "content": "First sentence with tension.<br>Dramatic beat.<br><br>New paragraph with emotional hook...",
       "wordCount": ${biteCut}
     },
     "shortCut": {
       "content": "Longer version with much more detail and context.<br>Additional emotional hooks.<br><br>Extended paragraph with richer description and character development...",
       "wordCount": ${shortCut}
-    }
-  }
+    }`}
+  }`}
   
   **INPUT**
   \`\`\`
@@ -133,7 +165,7 @@ async function streamSummary({
           { role: "system", content: "You are a helpful, precise assistant." },
           { role: "user", content: prompt }
         ],
-        response_format: zodResponseFormat(SummarySchema, "summary"),
+        response_format: zodResponseFormat(createSummarySchema(priorityTab), "summary"),
         temperature,
         frequency_penalty,
         stream: true,
@@ -171,5 +203,5 @@ async function streamSummary({
 
 module.exports = {
   streamSummary,
-  SummarySchema
+  createSummarySchema
 };
