@@ -4,13 +4,12 @@ import { KokoroProvider } from './context/KokoroContext';
 import './app.css';
 
 function App() {
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(true);
 
   useEffect(() => {
     // Initialize dark mode from your existing logic
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const storedTheme = localStorage.getItem('theme');
-    const isDark = storedTheme === 'dark' || (!storedTheme && prefersDark);
+    const isDark = storedTheme === 'dark' || !storedTheme;
     setDarkMode(isDark);
 
     // Apply the dark mode class to the root element
