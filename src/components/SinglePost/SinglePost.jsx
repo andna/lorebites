@@ -82,7 +82,17 @@ export function SinglePost({ post: propPost, setCurrentPost }) {
   const [processedContent, setProcessedContent] = useState('');
   const [totalSentences, setTotalSentences] = useState(0);
   const [allTextSentences, setAllTextSentences] = useState([]);
-  const [activeTab, setActiveTab] = useState('kokoro');
+  const isWebGpuSupported = typeof navigator.gpu !== 'undefined';
+  
+  // Reliable Safari detection based on vendor and user agent
+  const isSafari = (
+    navigator.vendor && 
+    navigator.vendor.indexOf('Apple') > -1 &&
+    navigator.userAgent.indexOf('CriOS') === -1 && 
+    navigator.userAgent.indexOf('FxiOS') === -1
+  );
+
+  const [activeTab, setActiveTab] = useState(isWebGpuSupported && !isSafari ? 'kokoro' : 'synth');
   const contentRef = useRef(null);
 
   // Sync parent state when post changes (for header title)

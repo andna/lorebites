@@ -55,6 +55,7 @@ body{
 .card,
 .is-posts-list .action-header {
     max-width: 400px;
+    width: calc(100% - 2rem);
 }
 
 header.card{

@@ -77,7 +77,9 @@ function MainContent() {
             &lt;
           </button>
         ) : (
-          <div className="logo">Logo</div>
+          <div className="logo">
+            <img src="/logo.svg" alt="Logo" />
+          </div>
         )}
 
         <div className="title">

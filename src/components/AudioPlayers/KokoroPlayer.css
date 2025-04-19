@@ -14,6 +14,11 @@
 
 .error-message {
   color: #d32f2f;
+  color: #d32f2f;
+background: black;
+text-align: left;
+font-family: monospace;
+font-size: 11px;
 }
 
 .tts-button {

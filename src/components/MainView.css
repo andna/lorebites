@@ -110,3 +110,9 @@
 :root.dark .progress-info {
   color: var(--text-secondary-dark, #aaa);
 }
+
+
+.logo img{
+  height: 2rem;
+  margin: 0 -0.5rem 0 0.5rem;
+}

@@ -206,7 +206,7 @@ export function KokoroPlayer({ allTextSentences, currentIndex, setCurrentIndex }
         <div className="loading-indicator">Initializing TTS...</div>
       ) : error ? (
         <div className="error-message">Kokoro Error: {error} <br></br> 
-          <p>Use desktop Chrome or Edge, or change to Synth</p>
+          <p>Choose Synth, OpenAi, or use Desktop Chrome or Edge</p>
           <a target="_blank" href="https://huggingface.co/onnx-community/Kokoro-82M-v1.0-ONNX#voicessamples">Voice samples ↗️</a>
           </div>
       ) : (<div>

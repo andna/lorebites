@@ -563,7 +563,7 @@ try {
 
 
   if (!browserCompatible && !isInitializing && !error) {
-    setError("Browser compatibility issue");
+    setError("Browser needs WebGPU");
   }
 
   return (
